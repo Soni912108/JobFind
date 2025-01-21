@@ -1,0 +1,26 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: jf_mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: RrushKumbullaQepe@30
+      MYSQL_DATABASE: mydb
+    ports:
+      - "3307:3306"
+
+  web:
+    build: .
+    container_name: jf_backend
+    restart: always
+    ports:
+      - "5001:5001"
+    depends_on:
+      - db
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+      PYTHONUNBUFFERED: 1  # To show print statements on Docker logs. 
+    volumes:
+      - .:/jobfind  # Mount the current directory to /app inside the container
+      #- __pycache__  # Ensure pycache doesn't persist

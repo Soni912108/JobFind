@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobs for you</title>
+</head>
+<body>
+    <!-- listing all jobs here -->
+    <h1>Jobs for you</h1>
+    <div>
+        <ul>
+            {% for jobs in all_jobs %}
+                <li>
+                    <a>{{ jobs.title }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

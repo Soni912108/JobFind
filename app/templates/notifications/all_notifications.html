@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications</title>
+</head>
+<body>
+    <!-- all notifications -->
+    <div class="container">
+        <h1>All Notifications</h1>
+        <div class="notifications">
+            <ul>
+                {% for notification in all_notifications %}
+                    <li>
+                        <a>{{ notification.message }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+</body>
+</html>
