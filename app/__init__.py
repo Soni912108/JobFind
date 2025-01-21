@@ -10,10 +10,10 @@ app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:RrushKumbullaQepe%4030@jf_mysql_db/mydb"
 app.config['SECRET_KEY'] = 'secret-key-goes-here'
 
-
 def create_app():
     # Initialize the app
     db.init_app(app)
+    
     # Register blueprints
     from .views.frontend import frontend_bp
     from .api.jobs import jobs_bp

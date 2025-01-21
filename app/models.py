@@ -51,6 +51,7 @@ class Companies(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True)
     name = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(1000)) # Hashed password
     description = db.Column(db.String(1000))
     location = db.Column(db.String(100))
     created_at = db.Column(DateTime, default=datetime.now)
