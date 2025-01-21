@@ -129,6 +129,7 @@ def company_register_get():
 
 @frontend_bp.route("/company/register", methods=["POST"])
 def company_register_post():
+    print(request.form)
     email = request.form.get("email")
     name = request.form.get("name")
     password = request.form.get("password")
