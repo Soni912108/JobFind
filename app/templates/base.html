@@ -11,6 +11,26 @@
     {% block content %}
     <h1>Home Page</h1>
     <p>Welcome to the home page</p>
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h2>Job Listings</h2>
+                <ul>
+                    <li>Job 1</li>
+                    <li>Job 2</li>
+                    <li>Job 3</li>
+                </ul>
+            </div>
+            <div class="col">
+                <h2>Recent Posts</h2>
+                <ul>
+                    <li>Post 1</li>
+                    <li>Post 2</li>
+                    <li>Post 3</li>
+                </ul>
+            </div>
+        </div>
+    </div>
     {% endblock %}
 
     {% include 'footer.html' %}
