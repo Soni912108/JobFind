@@ -20,7 +20,6 @@ services:
     environment:
       FLASK_ENV: development
       FLASK_DEBUG: 1
-      PYTHONUNBUFFERED: 1  # To show print statements on Docker logs. 
+      PYTHONUNBUFFERED: 1
     volumes:
-      - .:/jobfind  # Mount the current directory to /app inside the container
-      #- __pycache__  # Ensure pycache doesn't persist
+      - .:/jobfind

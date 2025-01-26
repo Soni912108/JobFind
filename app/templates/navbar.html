@@ -1,16 +1,23 @@
 {% block head %}
-    <link rel="stylesheet" href="/css/navbar.css">
+    <style>
+        /* custom style here */
+    </style> 
+{% endblock %}
+
+{% block title %}
 {% endblock %}
 
 
 
 {% block body %}
     <nav>
-        <a href="/">Home</a>
-        <a href="/logout">Logout</a>
+        <a href="{{url_for('frontend.jobs')}}" class="nav-link px-2 align-middle {% if active=='jobs' or active=='notifications' %}navbar-active{%endif %}">Home</a>
+        
         <a href="/profile">Profile</a>
-        <a href="/notifications">Notifications</a>
-        <a href="dms">DMs</a>
+        <a  href="{{url_for('frontend.notifications')}}" class="nav-link px-2 align-middle {% if active=='jobs' or active=='notifications' %}navbar-active{%endif %}">Notifications</a>
+        <a href="{{url_for('frontend.messages')}}" class="nav-link px-2 align-middle {% if active=='messages' or active=='notifications' %}navbar-active{%endif %}">DMs</a>
         <a href="/about">About</a>
+
+        <a href="/logout">Logout</a>
     </nav>
 {% endblock %}

@@ -12,7 +12,7 @@ from sqlalchemy.orm import foreign
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     user_type = db.Column(db.String(100), default='Person')  # Can be 'Company' or 'Person'
     email = db.Column(db.String(100), unique=True)
     name = db.Column(db.String(100))
@@ -41,18 +41,20 @@ class User(UserMixin, db.Model):
         backref='user_receiver',
         lazy=True
     )
+    @property
+    def role(self):
+        return "Person"
 
 
 
-
-class Companies(db.Model):
+class Companies(UserMixin,db.Model):
     __tablename__ = 'companies'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(100), unique=True)
     name = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(1000)) # Hashed password
-    description = db.Column(db.String(1000))
+    description = db.Column(LONGTEXT) 
     location = db.Column(db.String(100))
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
@@ -60,12 +62,15 @@ class Companies(db.Model):
     # Relationship to jobs posted by the company
     jobs = db.relationship('Jobs', backref='company', lazy=True)
 
+    @property
+    def role(self):
+        return "Company"
 
 @dataclass
 class Jobs(db.Model):
     __tablename__ = 'jobs'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)  # Foreign key to companies table
     title = db.Column(db.String(100))
     description = db.Column(db.String(1000))
@@ -79,7 +84,7 @@ class Jobs(db.Model):
 class DirectMessages(db.Model):
     __tablename__ = 'direct_messages'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     sender_id = db.Column(db.Integer, nullable=False, index=True)
     sender_type = db.Column(db.String(50), nullable=False, index=True)  # 'User' or 'Company'
     receiver_id = db.Column(db.Integer, nullable=False, index=True)
@@ -94,7 +99,7 @@ class DirectMessages(db.Model):
 class Notifications(db.Model):
     __tablename__ = 'notifications'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     receiver_id = db.Column(db.Integer, nullable=False) # Can be a user or a company
     message = db.Column(LONGTEXT)  # MySQL LONGTEXT for large messages
     read = db.Column(db.Boolean, default=False)

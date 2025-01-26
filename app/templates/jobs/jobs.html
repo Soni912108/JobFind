@@ -1,21 +1,105 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jobs for you</title>
-</head>
-<body>
-    <!-- listing all jobs here -->
-    <h1>Jobs for you</h1>
-    <div>
-        <ul>
-            {% for jobs in all_jobs %}
-                <li>
-                    <a>{{ jobs.title }}</a>
-                </li>
+{% extends 'jobs/base_jobs.html' %}
+
+{% block head %}
+
+<style>
+    /* custom style here */
+</style> 
+{% endblock %}
+
+{% block title %}
+Jobs for you
+{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    {% if session.get('user_type') == 'Company' %}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#jobModal">
+                <i class="fas fa-plus"></i> Add New Job
+            </button>
+            <div class="search-container position-relative">
+                <input type="search" class="form-control" id="jobSearch" placeholder="Search jobs" 
+                       {% if request.args.get('search') %}value="{{ request.args.get('search') }}"{% endif %}>
+                <i class="fas fa-search position-absolute end-0 top-50 translate-middle-y me-3"></i>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if jobs %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for job in jobs %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title text-primary mb-0">{{ job.title }}</h5>
+                                {% if job.is_owner %}
+                                    <span class="badge bg-primary">Your Job</span>
+                                {% endif %}
+                            </div>
+                            
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                <i class="fas fa-building me-2"></i>{{ job.company.name }}
+                            </h6>
+                            
+                            <p class="card-text">
+                                <i class="fas fa-map-marker-alt me-2"></i>{{ job.location }}<br>
+                                <i class="fas fa-dollar-sign me-2"></i>
+                                {% if job.salary %}
+                                    ${{ '{:,.2f}'.format(job.salary|float) }}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </p>
+                            
+                            <p class="card-text text-muted">
+                                {{ job.description[:150] }}{% if job.description|length > 150 %}...{% endif %}
+                            </p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <small class="text-muted">
+                                    Posted: {{ job.created_at.strftime('%Y-%m-%d') }}
+                                </small>
+                                
+                                {% if job.is_owner %}
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" data-bs-target="#editJobModal" 
+                                                data-job-id="{{ job.id }}" onclick="editJob(event)">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                data-bs-toggle="modal" data-bs-target="#deleteJobModal" 
+                                                data-job-id="{{ job.id }}" onclick="deleteJob(event)">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             {% endfor %}
-        </ul>
-    </div>
-</body>
-</html>
+        </div>
+        <!-- Pagination - Outside of job cards grid -->
+        <div class="row mt-4">
+            <div class="col">
+                {% block pagination %}
+                    {{ super() }}
+                {% endblock pagination %}
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            No jobs found.
+        </div>
+    {% endif %}
+</div>
+
+<!-- end of the block body -->
+{% endblock %}
+
+{% block scripts %}
+<!-- <script src="{{url_for('static', filename='js/jobs/jobs.js')}}"></script> -->
+{% endblock %}
