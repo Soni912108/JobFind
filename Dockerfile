@@ -22,6 +22,5 @@ ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_DEBUG=1
 ENV FLASK_RUN_PORT=5001
 
-# Run flask when the container launches
-
+# Run flask when the container launches 
 CMD ["flask","--app=main.py", "run", "--debug", "--host=0.0.0.0"]

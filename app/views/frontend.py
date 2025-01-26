@@ -1,29 +1,63 @@
 from flask import Blueprint, render_template, request, redirect, jsonify,url_for, flash
+from flask import session
 from flask_login import login_user,login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import (User, Companies, Jobs, DirectMessages, Notifications)
 from app import db
+from app.helpers.validate_data import validate_register_data, validate_login_data,is_form_empty,validate_register_company_data,validate_register_user_data
+
 
 frontend_bp = Blueprint("frontend",__name__)
 
 # Home
 @frontend_bp.route("/")
-@login_required
 def index():
-    return render_template("base.html", active="dashboard", user=current_user)
+    return render_template("index.html")
 
 # Jobs - feed
 @frontend_bp.route("/jobs")
 @login_required
 def jobs():
-    all_jobs = Jobs.query.all()
-    return render_template("jobs/jobs.html", active="jobs", jobs=all_jobs)
+    requested_page = request.args.get('page', 1, type=int)
+    page = max(1, requested_page)
+    per_page = 12
+
+    search_for = request.args.get('search', '').strip()
+    if search_for:
+        base_query = Jobs.query.filter(Jobs.title.ilike(f"%{search_for}%"))
+    else:
+        base_query = Jobs.query
+
+    # Get paginated jobs
+    jobs_pagination = base_query.order_by(Jobs.created_at.desc()).paginate(
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
+    # check 1st if current user is Company
+    if isinstance(current_user, Companies):
+        print("Current user is a company")
+        # Mark owned jobs
+        jobs_list = jobs_pagination.items
+        for job in jobs_list:
+            job.is_owner = job.id == current_user.id
+    else:
+        jobs_list = jobs_pagination.items
+    
+    return render_template(
+        "jobs/jobs.html",
+        active="jobs", 
+        pagination=jobs_pagination,
+        jobs=jobs_list,
+        total_count=jobs_pagination.total,
+        user=current_user
+    )
 
 # Notifications
 @frontend_bp.route("/notifications")
 @login_required
 def notifications():
-    all_notifications = Notifications.query.all(receiver_id=current_user.id)
+    all_notifications = Notifications.query.filter_by(receiver_id=current_user.id)
     return render_template(
         "notifications/all_notifications.html", 
         active="notifications",
@@ -39,118 +73,131 @@ def messages():
 
 
 
-# Authentication for users(Person)
+# Authentication
 @frontend_bp.route("/users/login")
-def users_login():
+def login():
     return render_template("users/login.html", active="login")
 
-@frontend_bp.route("/users/login",methods=["POST"])
-def users_login_post():
-    email = request.form.get("email")
-    password = request.form.get("password")
-    remember = True if request.form.get("remember") else False
+from flask import session
 
-    user = User.query.filter_by(email=email).first()
+@frontend_bp.route("/users/login", methods=["POST"])
+def login_post():
+    req_data = request.form
+    print(f"Login data: {req_data}")
+    
+    if is_form_empty(req_data):
+        flash("No data provided in the form.", "warning")
+        return redirect(url_for("frontend.login"))
+    
+    errors = validate_login_data(req_data)
+    if errors:
+        for error in errors:
+            flash(error, "warning")
+        return redirect(url_for("frontend.login"))
 
-    if user and check_password_hash(user.password, password):
-        login_user(user, remember=remember)
-        return redirect(url_for("frontend.index"))
+    user_type = req_data.get("user_type")
+    email=req_data.get("email")
+    user = None
+
+    if user_type == "Person":
+        user = User.query.filter_by(email=email).first()
+    elif user_type == "Company":
+        user = Companies.query.filter_by(email=email).first()
+
+    if not user:
+        flash(f"{user_type} not found.", "danger")
+        return redirect(url_for("frontend.login"))
+
+    # Check password
+    if check_password_hash(user.password, req_data.get("password")):
+        # Store user type in the session
+        session["user_type"] = user_type
+        login_user(user, remember=req_data.get("remember", False))
+        flash("Login successful!", "success")
+        return redirect(url_for("frontend.jobs"))
     else:
-        flash("Invalid Credentials.", "danger")
-        return redirect(url_for("frontend.users_login"))
+        flash("Invalid credentials.", "danger")
+        return redirect(url_for("frontend.login"))
+
 
 
 @frontend_bp.route("/users/register")
-def users_register_get():
+def register():
     return render_template("users/register.html")
 
-@frontend_bp.route('/users/register', methods=['POST'])
-def users_register_post():
+@frontend_bp.route('/register', methods=['POST'])
+def register_post():
     try:
-        # Get form data
-        email = request.form.get('email')
-        name = request.form.get('name')
-        surname = request.form.get('surname')
-        profession = request.form.get('profession')
-        password = request.form.get('password')
-        # Validate required fields
-        if not all([email, password, name, surname, profession]):
-            return jsonify({'error': 'All fields are required'}), 400
+        req_data = request.form
+        print(f"Register data: {req_data}")
+        # Check if the form is empty
+        if is_form_empty(req_data):
+            flash("No data provided in the form.", "warning")
+            return redirect(url_for("frontend.register"))
+        # Validate the data provided, this is for common fields of both company and person
+        errors = validate_register_data(req_data)
+        if errors:
+            for error in errors:
+                flash(error, "warning")
+            return redirect(url_for("frontend.register"))
+        # Here we have passed the common fields validation, now we can check for user_type(is certain its either Person or Company)
+        if req_data.get("user_type") == 'Person':
+            errors = validate_register_user_data(req_data)
+            if errors:
+                for error in errors:
+                    flash(error, "warning")
+                return redirect(url_for("frontend.register"))
+            # Check email exists in User table
+            if User.query.filter_by(email=req_data.get("email")).first():
+                flash("Email already registered as Person.", "warning")
+                return redirect(url_for("frontend.register"))
+            # Create User
+            user = User(
+                email=req_data.get("email"),
+                name=req_data.get("name"),
+                surname=req_data.get("surname"),
+                profession=req_data.get("profession"),
+                password=generate_password_hash(req_data.get("password"),method='pbkdf2')
+            )
+            db.session.add(user)
+            
+        elif req_data.get("user_type") == 'Company':
+            # Validate Company fields
+            errors = validate_register_company_data(req_data)
+            if errors:
+                for error in errors:
+                    flash(error, "warning")
+                return redirect(url_for("frontend.register"))
+            # Check email exists in Companies table
+            if Companies.query.filter_by(email=req_data.get("email")).first():
+                flash("Email already registered as Company.", "warning")
+                return redirect(url_for("frontend.register"))
+            # Create Company
+            company = Companies(
+                email=req_data.get("email"),
+                name=req_data.get("name"),
+                description=req_data.get("description"),
+                location=req_data.get("location"),
+                password=generate_password_hash(req_data.get("password"))
+            )
+            db.session.add(company)
 
-        # Check if user already exists
-        if User.query.filter_by(email=email).first():
-            return jsonify({'error': 'Email already registered'}), 409
-
-        # Create new user
-        new_user = User(
-            email=email,
-            password=generate_password_hash(password),
-            name=name,
-            surname=surname,
-            profession=profession
-        )
-
-        # Add to database
-        db.session.add(new_user)
         db.session.commit()
-
-        return redirect(url_for("frontend.users_login"))
+        flash("Registration successful", "success")
+        return redirect(url_for('frontend.login'))
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        flash('Error during registration', "danger")
+        return redirect(url_for('frontend.register'))
 
 
 
-# Authentication for Companies(Company)
-@frontend_bp.route("/company/login")
-def company_login():
-    return render_template("company/login.html", active="login")
-
-@frontend_bp.route("/company/login",methods=["POST"])
-def company_login_post():
-    email = request.form.get("email")
-    password = request.form.get("password")
-    remember = True if request.form.get("remember") else False
-
-    user = Companies.query.filter_by(email=email).first()
-
-    if user and check_password_hash(user.password, password):
-        login_user(user, remember=remember)
-        return redirect(url_for("frontend.index"))
-    else:
-        flash("Invalid Credentials.", "danger")
-        return redirect(url_for("frontend.company_login"))
-
-
-@frontend_bp.route("/company/register")
-def company_register_get():
-    return render_template("company/register.html")
-
-@frontend_bp.route("/company/register", methods=["POST"])
-def company_register_post():
-    print(request.form)
-    email = request.form.get("email")
-    name = request.form.get("name")
-    password = request.form.get("password")
-
-    user = Companies.query.filter_by(email=email).first()
-
-    if user:
-        flash("Email address already exists")
-        return redirect(url_for("frontend.company_register_get"))
-
-    new_user = Companies(email=email, name=name, password=generate_password_hash(password,method="pbkdf2"))
-    db.session.add(new_user)
-    db.session.commit()
-
-    return redirect(url_for("frontend.company_login"))
-
-
-
-# Should change this to post - check if Person or Company before redirecting to login/
+# Logout 
 @frontend_bp.route("/logout")
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for("frontend.users_login"))
+    session.clear()  # Clears the session
+    flash("You have been logged out.", "info")
+    return redirect(url_for("frontend.login"))
