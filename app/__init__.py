@@ -53,6 +53,6 @@ def create_app():
     with app.app_context():
         print("Creating tables...")
         db.create_all()
-        print("Tables created.")
+        print("Tables created!")
     
     return app
