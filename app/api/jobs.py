@@ -1,14 +1,14 @@
-from flask import Blueprint, request, flash, redirect, url_for,jsonify
+from flask import Blueprint, request, flash, redirect, url_for,jsonify,session
 from app import db
-from app.models import User, Companies, Jobs
+from app.models import User, Companies, Jobs, applications
 from datetime import datetime
-from flask_login import login_user,login_required, current_user, logout_user
+from flask_login import login_required, current_user
 from app.helpers.validate_data import is_form_empty
 
 jobs_bp = Blueprint("jobs",__name__)
 
 # Create a new job
-@jobs_bp.route("/jobs/create", methods=["POST"])
+@jobs_bp.route("/job/create", methods=["POST"])
 @login_required
 def create_job():
     try:
@@ -18,14 +18,15 @@ def create_job():
             flash("No data provided in the form.", "warning")
             redirect(request.referrer or url_for('frontend.jobs'))
         
+        # Check if current user is a company
+        if not isinstance(current_user, Companies):
+            flash("Only companies can create a job", "danger")
+            return redirect(request.referrer or url_for('frontend.jobs'))
+        
         # Verify company exists
         company = Companies.query.filter_by(email=current_user.email).first()
         if not company:
             flash("Company not found", "danger")
-            return redirect(request.referrer or url_for('frontend.jobs'))
-        # Check if current user is a company
-        if not isinstance(current_user, Companies):
-            flash("Only companies can create a job", "danger")
             return redirect(request.referrer or url_for('frontend.jobs'))
 
         # Create new job with verified company_id
@@ -52,13 +53,12 @@ def create_job():
     return redirect(request.referrer or url_for('frontend.jobs'))
 
 # job detail
-@jobs_bp.route("/jobs/info/<int:job_id>", methods=["POST"])
+@jobs_bp.route("/job/info/<int:job_id>", methods=["GET"])
 @login_required
 def job_detail(job_id):
-    job = Jobs.query.filter_by(company_id=current_user.id, id=job_id).first()
+    job = Jobs.query.filter_by(id=job_id).first()
     if not job:
-        flash("Job not found", "danger")
-        return redirect(url_for('frontend.jobs'))
+        return jsonify({"error": "Job not found"})
 
     return jsonify({
         "job_id": job.id,
@@ -73,7 +73,7 @@ def job_detail(job_id):
 
 
 # Update job
-@jobs_bp.route("/jobs/update/", methods=["POST"])
+@jobs_bp.route("/job/update/", methods=["POST"])
 @login_required
 def update_job():
     job_id = request.form.get('editJobId')
@@ -81,7 +81,7 @@ def update_job():
     job = Jobs.query.filter_by(company_id=current_user.id, id=job_id).first()
     if not job:
         flash("Can not update this job - either not under this company or does not exists", "danger")
-        return redirect(url_for('frontend.jobs'))
+        return redirect(request.referrer or url_for('frontend.jobs'))
 
     try:
         job.title = request.form.get('editJobTitle')
@@ -97,15 +97,18 @@ def update_job():
         print("Error updating job:", str(e))
         flash("Error updating job", "danger")
 
-    return redirect(url_for('frontend.jobs'))
+    return redirect(request.referrer or url_for('frontend.jobs'))
 
 
 # delete job
-@jobs_bp.route("/jobs/delete/", methods=["POST"])
+@jobs_bp.route("/job/delete/", methods=["POST"])
 @login_required
-def delete_job(job_id):
+def delete_job():
+    print("Delete job form data:", request.form)
+    job_id = request.form.get("jobId")
     # make sure job exists and belongs to the current user
     job = Jobs.query.filter_by(company_id=current_user.id, id=job_id).first()
+    print(f"Job to delete: ID={job.id}, Title={job.title}, Description={job.description}, Location={job.location}")
     if not job:
         flash("Can not delete this job - either not under this company or does not exists", "danger")
         return redirect(url_for('frontend.jobs'))
@@ -119,4 +122,45 @@ def delete_job(job_id):
         print("Error deleting job:", str(e))
         flash("Error deleting job", "danger")
 
-    return redirect(url_for('frontend.jobs'))
+    return redirect(request.referrer or url_for('frontend.jobs'))
+
+
+
+# Apply for a job
+@jobs_bp.route("/job/apply/<int:job_id>", methods=["POST"])
+@login_required
+def apply_job(job_id):
+
+    print("==== Job Application Debug ====")
+    print(f"Request Method: {request.method}")
+    print(f"Job ID from URL: {job_id}")
+    print("============================")
+
+
+    # Check if job exists
+    job = Jobs.query.filter_by(id=job_id).first()
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+    
+    # check if the user is a Company
+    if isinstance(current_user, Companies) or session.get('user_type') == 'Company':
+        return jsonify({"error": "Only Professionals can apply for jobs."}),409
+ 
+    # Check if already applied  
+    if current_user in job.applicants:
+        return jsonify({"error": "You have already applied for this job"}), 409
+    
+    try:
+        # Add application with timestamp
+        application = applications.insert().values(
+            user_id=current_user.id,
+            job_id=job_id,
+            applied_at=datetime.now()
+        )
+        db.session.execute(application)
+        db.session.commit()
+        return jsonify({"message": "Application submitted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        print("Error applying for job:", str(e))
+        return jsonify({"error": "Error applying for job"}), 500

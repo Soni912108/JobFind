@@ -13,19 +13,22 @@ Jobs for you
 
 {% block body %}
 <div class="container mt-4">
-    {% if session.get('user_type') == 'Company' %}
         <div class="d-flex justify-content-between align-items-center mb-4">
+            {% if session.get('user_type') == 'Company' %}
             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#jobModal">
                 <i class="fas fa-plus"></i> Add New Job
             </button>
+            {% endif %}
             <div class="search-container position-relative">
                 <input type="search" class="form-control" id="jobSearch" placeholder="Search jobs" 
                        {% if request.args.get('search') %}value="{{ request.args.get('search') }}"{% endif %}>
                 <i class="fas fa-search position-absolute end-0 top-50 translate-middle-y me-3"></i>
+                <button id="removeFilters" class="btn btn-danger" title="Remove Filters" style="display: none;"> 
+                    <i class="fas fa-times"></i> <!-- Minimalistic icon -->
+                </button> 
             </div>
         </div>
-    {% endif %}
-
+        
     {% if jobs %}
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             {% for job in jobs %}
@@ -63,18 +66,56 @@ Jobs for you
                                 </small>
                                 
                                 {% if job.is_owner %}
-                                    <div class="btn-group">
+                                    <div class="btn-group" data-job-id="{{ job.id }}">
                                         <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                data-bs-toggle="modal" data-bs-target="#editJobModal" 
-                                                data-job-id="{{ job.id }}" onclick="editJob(event)">
+                                                data-bs-toggle="modal" onclick="getJobInfo('{{ job.id }}', 'editJobModal')" 
+                                                >
                                             <i class="fas fa-edit"></i> Edit
                                         </button>
+                                        <!-- Each delete button is linked to the modal -->
                                         <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                data-bs-toggle="modal" data-bs-target="#deleteJobModal" 
-                                                data-job-id="{{ job.id }}" onclick="deleteJob(event)">
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#deleteJobModal"
+                                                onclick="deleteJob('{{ job.id }}', '{{ job.title }}',)">
                                             <i class="fas fa-trash"></i> Delete
                                         </button>
                                     </div>
+                                {% elif session.get('user_type') == 'Company'%}
+                                    <div class="btn-group" data-job-id="{{ job.id }}">
+                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                    data-bs-toggle="modal"  onclick="getJobInfo('{{ job.id }}', 'viewJobModal')"
+                                                    >
+                                                <i class="fas fa-info"></i> View
+                                        </button>
+                                    </div>
+                                <!-- NOTE: maybe add JS to toggle the button form Apply to Applied to avoid requests-->
+                                {% elif job.already_applied %}
+                                <div class="btn-group">
+                                    <span class="alert alert-info d-inline-flex align-items-center m-0 px-3 py-1 border-0" 
+                                          style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <small class="fw-semibold">Applied</small>
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            onclick="getJobInfo('{{ job.id }}', 'viewJobModal')">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                </div>
+                                {% else %}
+                                <div class="btn-group" data-job-id="{{ job.id }}">
+                                    <button type="button" class="btn btn-sm btn-success"
+                                            onclick="applyForJobPosition('{{ job.id }}')"
+                                            >
+                                        <i class="fas fa-paper-plane"></i> Apply
+                                    </button>
+                                    <br>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            onclick="getJobInfo('{{ job.id }}', 'viewJobModal')">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                </div>
                                 {% endif %}
                             </div>
                         </div>
@@ -98,8 +139,4 @@ Jobs for you
 </div>
 
 <!-- end of the block body -->
-{% endblock %}
-
-{% block scripts %}
-<!-- <script src="{{url_for('static', filename='js/jobs/jobs.js')}}"></script> -->
 {% endblock %}

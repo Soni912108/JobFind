@@ -1,0 +1,44 @@
+{% extends "jobs/base_jobs.html" %}
+
+{% block title %}My Applications{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4"><i class="fas fa-file-alt me-2"></i>My Applications</h2>
+    
+    {% if applications %}
+        <div class="row">
+            {% for job, applied_at in applications %}
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ job.title }}</h5>
+                            <p class="card-text text-muted">
+                                <i class="fas fa-building me-2"></i>{{ job.company.name }}
+                            </p>
+                            <p class="card-text">
+                                <i class="fas fa-map-marker-alt me-2"></i>{{ job.location }}
+                            </p>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-2"></i>Applied on: {{ applied_at.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                            </p>
+                            <div class="mt-3">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="getJobInfo('{{ job.id }}', 'viewJobModal')">
+                                    <i class="fas fa-eye me-1"></i>View Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>You haven't applied to any jobs yet.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -66,6 +66,17 @@ class Companies(UserMixin,db.Model):
     def role(self):
         return "Company"
 
+
+# Create association table
+applications = db.Table('applications',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
+    db.Column('job_id', db.Integer, db.ForeignKey('jobs.id')),
+    # Need a column to store the resume of the user
+    
+    db.Column('applied_at', DateTime, default=datetime.now)
+)
+
+
 @dataclass
 class Jobs(db.Model):
     __tablename__ = 'jobs'
@@ -79,6 +90,12 @@ class Jobs(db.Model):
     likes = db.Column(db.Integer, default=0)
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    # Add relationship to applicants
+    applicants = db.relationship('User',
+                               secondary=applications,
+                               backref=db.backref('applied_jobs', lazy='dynamic'))
+
+
 
 @dataclass
 class DirectMessages(db.Model):
@@ -90,8 +107,8 @@ class DirectMessages(db.Model):
     receiver_id = db.Column(db.Integer, nullable=False, index=True)
     receiver_type = db.Column(db.String(50), nullable=False, index=True)  # 'User' or 'Company'
     message = db.Column(LONGTEXT)  # MySQL-specific long text field
-    created_at = db.Column(DateTime, default=datetime.utcnow)
-    updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(DateTime, default=datetime.now)
+    updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 
 
