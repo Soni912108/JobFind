@@ -20,11 +20,13 @@ def create_app():
     from .api.jobs import jobs_bp
     from .api.direct_messages import direct_messages_bp
     from .api.notifications import notifications_bp
+    from .api.applications import applications_bp
     
     app.register_blueprint(frontend_bp)
     app.register_blueprint(jobs_bp, url_prefix="/jobs/")
     app.register_blueprint(direct_messages_bp, url_prefix="/messages/")
     app.register_blueprint(notifications_bp, url_prefix="/notifications/")
+    app.register_blueprint(applications_bp, url_prefix="/applications/")
     
     # Initialize flask-login
     login_manager = LoginManager()

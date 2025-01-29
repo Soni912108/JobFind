@@ -34,15 +34,22 @@ def jobs():
         per_page=per_page,
         error_out=False
     )
-    # check 1st if current user is Company
-    if isinstance(current_user, Companies):
-        print("Current user is a company")
-        # Mark owned jobs
-        jobs_list = jobs_pagination.items
-        for job in jobs_list:
-            job.is_owner = job.id == current_user.id
-    else:
-        jobs_list = jobs_pagination.items
+    jobs_list = jobs_pagination.items
+    
+    # Debug print for checking job attributes
+    print("=== Jobs Debug ===")
+    
+    for job in jobs_list:
+        # check 1st if current user is Company
+        if isinstance(current_user, Companies):
+            job.is_owner = job.company_id == current_user.id
+            print(f"Job {job.id} - Owner: {job.is_owner}")
+        else:
+            # For regular users, check if they've applied
+            job.already_applied = current_user in job.applicants
+            print(f"Job {job.id} - Applied: {job.already_applied}")
+            
+        print(f"Job {job.id} applicants: {[a.id for a in job.applicants]}")
     
     return render_template(
         "jobs/jobs.html",
@@ -78,7 +85,6 @@ def messages():
 def login():
     return render_template("users/login.html", active="login")
 
-from flask import session
 
 @frontend_bp.route("/users/login", methods=["POST"])
 def login_post():

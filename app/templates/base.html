@@ -55,10 +55,10 @@
     <!-- Main Content -->
     <main class="container py-4">
         {% if user.is_authenticated %}
-            {% if user.role == "Person" %}
-                <p>Welcome back, {{ user.name }}</p>
-            {% elif user.role == "Company" %}
-                <p>Welcome back, {{ user.name }} from {{ user.location }}</p>
+            {% if user.role == "Person" and request.endpoint == 'frontend.index' %}
+                <p class="welcome-message">Welcome back, {{ user.name }}</p>
+            {% elif user.role == "Company" and request.endpoint == 'frontend.index' %}
+                <p class="welcome-message">Welcome back, {{ user.name }} from {{ user.location }}</p>
             {% endif %}
         {% else %}
             <p class="welcome-message">Welcome, Guest</p>

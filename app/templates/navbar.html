@@ -1,23 +1,72 @@
 {% block head %}
-    <style>
-        /* custom style here */
-    </style> 
+<style>
+    .navbar-active {
+        color: #0d6efd !important;
+        font-weight: bold;
+    }
+</style>
 {% endblock %}
-
-{% block title %}
-{% endblock %}
-
-
 
 {% block body %}
-    <nav>
-        <a href="{{url_for('frontend.jobs')}}" class="nav-link px-2 align-middle {% if active=='jobs' or active=='notifications' %}navbar-active{%endif %}">Home</a>
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('frontend.jobs') }}">
+            <i class="fas fa-briefcase me-2"></i>JobFind
+        </a>
         
-        <a href="/profile">Profile</a>
-        <a  href="{{url_for('frontend.notifications')}}" class="nav-link px-2 align-middle {% if active=='jobs' or active=='notifications' %}navbar-active{%endif %}">Notifications</a>
-        <a href="{{url_for('frontend.messages')}}" class="nav-link px-2 align-middle {% if active=='messages' or active=='notifications' %}navbar-active{%endif %}">DMs</a>
-        <a href="/about">About</a>
-
-        <a href="/logout">Logout</a>
-    </nav>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a href="{{ url_for('frontend.jobs') }}" 
+                       class="nav-link {% if active=='jobs' %}navbar-active{% endif %}">
+                        <i class="fas fa-home me-1"></i>Home
+                    </a>
+                </li>
+                
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a href="{{ url_for('frontend.notifications') }}" 
+                           class="nav-link {% if active=='notifications' %}navbar-active{% endif %}">
+                            <i class="fas fa-bell me-1"></i>Notifications
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a href="{{ url_for('frontend.messages') }}" 
+                           class="nav-link {% if active=='messages' %}navbar-active{% endif %}">
+                            <i class="fas fa-envelope me-1"></i>Messages
+                        </a>
+                    </li>
+                    {% if session.get('user_type') == 'Person' %}
+                    <li class="nav-item">
+                        <a href="{{ url_for('applications.applications_page') }}" 
+                           class="nav-link {% if active=='applications' %}navbar-active{% endif %}">
+                            <i class="fas fa-file-alt me-1"></i>Applications
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+            
+            <div class="d-flex">
+                {% if current_user.is_authenticated %}
+                    <!-- <a href="/profile" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-user me-1"></i>Profile
+                    </a> -->
+                    <a href="{{ url_for('frontend.logout') }}" class="btn btn-outline-danger">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('frontend.login') }}" class="btn btn-outline-primary me-2">Login</a>
+                    <a href="{{ url_for('frontend.register') }}" class="btn btn-primary">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
 {% endblock %}
