@@ -3,8 +3,21 @@
 {% block head %}
 
 <style>
-    /* custom style here */
-</style> 
+    /* Hide the default 'x' icon on input[type="search"] */
+    input[type="search"]::-webkit-search-cancel-button {
+        display: none;
+    }
+  
+    input[type="search"]::-ms-clear {
+        display: none;
+    }
+  
+    input[type="search"] {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+  </style>
 {% endblock %}
 
 {% block title %}
@@ -12,23 +25,52 @@ Jobs for you
 {% endblock %}
 
 {% block body %}
+
+
 <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            {% if session.get('user_type') == 'Company' %}
-            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#jobModal">
-                <i class="fas fa-plus"></i> Add New Job
-            </button>
-            {% endif %}
-            <div class="search-container position-relative">
-                <input type="search" class="form-control" id="jobSearch" placeholder="Search jobs" 
-                       {% if request.args.get('search') %}value="{{ request.args.get('search') }}"{% endif %}>
-                <i class="fas fa-search position-absolute end-0 top-50 translate-middle-y me-3"></i>
-                <button id="removeFilters" class="btn btn-danger" title="Remove Filters" style="display: none;"> 
-                    <i class="fas fa-times"></i> <!-- Minimalistic icon -->
-                </button> 
+    {% if session.get('user_type') == 'Company' %}
+    <!-- wont make a diff if the 'if' is deleted and button showed - server wont allowed it -->
+        <div class="header-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#jobModal">
+                    <i class="fas fa-plus"></i> Add New Job
+                </button>
+                <div class="search-container position-relative">
+                    <input type="search" class="form-control" id="jobSearch" placeholder="Search jobs" 
+                        {% if request.args.get('search') %}value="{{ request.args.get('search') }}"{% endif %}>
+                    <i class="fas fa-search position-absolute end-0 top-50 translate-middle-y me-3"></i>
+                    <button id="removeFilters" class="btn btn-danger" title="Remove Filters" style="display: none;"> 
+                        <i class="fas fa-times"></i> <!-- Minimalistic icon -->
+                    </button> 
+                </div>
             </div>
         </div>
-        
+        {% else %}
+        <div class="container-fluid mb-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <div class="search-container position-relative me-2 flex-grow-1">
+                            <input type="search" 
+                                   class="form-control" 
+                                   id="jobSearch" 
+                                   placeholder="Search jobs" 
+                                   {% if request.args.get('search') %}
+                                   value="{{ request.args.get('search') }}"
+                                   {% endif %}>
+                            <i class="fas fa-search position-absolute end-0 top-50 translate-middle-y me-3"></i>
+                        </div>
+                        <button id="removeFilters" 
+                                class="btn btn-danger" 
+                                title="Remove Filters" 
+                                style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     {% if jobs %}
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             {% for job in jobs %}

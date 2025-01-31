@@ -5,8 +5,6 @@ from datetime import datetime
 from dataclasses import dataclass
 from sqlalchemy import JSON
 from sqlalchemy.dialects.mysql import LONGTEXT
-from sqlalchemy.orm import foreign
-
 
 
 class User(UserMixin, db.Model):
@@ -84,7 +82,7 @@ class Jobs(db.Model):
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)  # Foreign key to companies table
     title = db.Column(db.String(100))
-    description = db.Column(db.String(1000))
+    description = db.Column(LONGTEXT(collation='utf8mb4_unicode_ci'))  # Explicit collation
     location = db.Column(db.String(100))
     salary = db.Column(db.String(100))
     likes = db.Column(db.Integer, default=0)
