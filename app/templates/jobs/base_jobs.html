@@ -85,37 +85,67 @@
         </div>
     </div>
 </div>
+
 <!-- View job Modal -->
 <div class="modal fade" id="viewJobModal" tabindex="-1" aria-labelledby="viewJobModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="viewJobModalLabel">Job Information</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="viewJobModalLabel">
+                    <i class="fas fa-briefcase me-2"></i>Job Information
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <!-- Hidden input to store job ID -->
                 <input type="hidden" id="view-job-id" value="">
-
                 <!-- Card to display job details in a non-editable format -->
-                <div class="card">
-                    <div class="card-body">
-                        <h6 class="card-subtitle mb-2 text-muted">Job Title</h6>
-                        <p id="view-job-name" class="card-text"></p>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-tag me-2"></i>Job Title
+                            </h6>
+                            <p id="view-job-name" class="card-text fs-5 fw-bold"></p>
+                        </div>
 
-                        <h6 class="card-subtitle mb-2 text-muted">Description</h6>
-                        <p id="view-job-description" class="card-text"></p>
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-align-left me-2"></i>Description
+                            </h6>
+                            <div class="description-container bg-light" 
+                                 style="max-height: 250px; 
+                                        overflow-y: auto; 
+                                        border: 1px solid #dee2e6; 
+                                        border-radius: 0.25rem; 
+                                        padding: 1rem; 
+                                        background-color: #f8f9fa; 
+                                        scrollbar-width: thin; 
+                                        scrollbar-color: #6c757d #f1f1f1;">
+                                <p id="view-job-description" class="card-text mb-0"></p>
+                            </div>
+                        </div>
 
-                        <h6 class="card-subtitle mb-2 text-muted">Location</h6>
-                        <p id="view-job-location" class="card-text"></p>
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-map-marker-alt me-2"></i>Location
+                            </h6>
+                            <p id="view-job-location" class="card-text"></p>
+                        </div>
 
-                        <h6 class="card-subtitle mb-2 text-muted">Salary</h6>
-                        <pre id="view-job-salary" class="card-text bg-light p-2 rounded"></pre>
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-money-bill-wave me-2"></i>Salary
+                            </h6>
+                            <pre id="view-job-salary" class="card-text bg-light p-3 rounded"></pre>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Close
+                </button>
             </div>
         </div>
     </div>

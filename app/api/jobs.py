@@ -28,7 +28,7 @@ def create_job():
         if not company:
             flash("Company not found", "danger")
             return redirect(request.referrer or url_for('frontend.jobs'))
-
+        print(f"Description Length: {len(request.form.get('description'))}")
         # Create new job with verified company_id
         new_job = Jobs(
             title=request.form.get('jobtitle'),

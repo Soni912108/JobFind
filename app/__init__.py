@@ -6,6 +6,14 @@ db = SQLAlchemy()
 
 app = Flask(__name__)
 
+# this equals 50 MB memory size that the flask server can handle - 
+# just for reference: when in prod we might need to set a limit to the server like
+# Nginx -> client_max_body_size 50M; 
+# or Gunicorn -> gunicorn --max-request-size 52428800
+MEGABYTE = (2 ** 10) ** 2 #  50 MB memory size
+app.config['MAX_CONTENT_LENGTH'] = 50 * MEGABYTE #  50 MB memory size
+app.config['MAX_FORM_MEMORY_SIZE'] = 50 * MEGABYTE #  50 MB memory size
+
 # Configure the app 
 # app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:RrushKumbullaQepe%4030@jf_mysql_db/mydb"
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:RrushKumbullaQepe%4030@jf_mysql_db/mydb"
