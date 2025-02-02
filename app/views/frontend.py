@@ -4,7 +4,10 @@ from flask_login import login_user,login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import (User, Companies, Jobs, DirectMessages, Notifications,Applications)
 from app import db
-from app.helpers.validate_data import validate_register_data, validate_login_data,is_form_empty,validate_register_company_data,validate_register_user_data
+from app.utils.validate_data import (validate_register_data, validate_login_data,is_form_empty,
+                                     validate_register_company_data,validate_register_user_data)
+
+from sqlalchemy import or_
 
 
 frontend_bp = Blueprint("frontend",__name__)
@@ -71,7 +74,7 @@ def applications_page():
         flash("Can open this page!", "info")
         return redirect(request.referrer or url_for('frontend.jobs'))
     
-        # Get and sanitize parameters
+    # Get and sanitize parameters
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     search_term = request.args.get('search', '').strip()
@@ -128,12 +131,32 @@ def applications_page():
 @frontend_bp.route("/notifications")
 @login_required
 def notifications():
-    all_notifications = Notifications.query.filter_by(receiver_id=current_user.id)
+    requested_page = request.args.get('page', 1, type=int)
+    page = max(1, requested_page)
+    per_page = 12
+
+    search_for = request.args.get('search', '').strip()
+    if search_for:
+        base_query = Notifications.query.filter(Notifications.title.ilike(f"%{search_for}%"))
+    else:
+        base_query = Notifications.query
+
+    # Get paginated jobs
+    notifications_pagination = base_query.order_by(Notifications.created_at.desc()).paginate(
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
+    msg_list = notifications_pagination.items
+
     return render_template(
-        "notifications/all_notifications.html", 
-        active="notifications",
-        all_notifications=all_notifications
-        )
+        "notifications/notifications.html",
+        active="notifications", 
+        pagination=notifications_pagination,
+        notifications=msg_list,
+        total_count=notifications_pagination.total,
+        user=current_user
+    )
 
 # Messages
 @frontend_bp.route("/messages")
@@ -145,9 +168,11 @@ def messages():
 
     search_for = request.args.get('search', '').strip()
     if search_for:
-        base_query = DirectMessages.query.filter(DirectMessages.title.ilike(f"%{search_for}%"))
+        # filter only the messages that were send or received by the current_user.id
+        base_query = DirectMessages.query.filter((DirectMessages.sender_id == current_user.id) | (DirectMessages.receiver_id == current_user.id),
+                                                DirectMessages.title.ilike(f"%{search_for}%"))
     else:
-        base_query = DirectMessages.query
+        base_query = DirectMessages.query.filter((DirectMessages.sender_id == current_user.id) | (DirectMessages.receiver_id == current_user.id))
 
     # Get paginated jobs
     msg_pagination = base_query.order_by(DirectMessages.created_at.desc()).paginate(

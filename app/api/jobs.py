@@ -1,9 +1,11 @@
 from flask import Blueprint, request, flash, redirect, url_for,jsonify,session
+from flask_login import login_required, current_user
+# local
 from app import db
 from app.models import User, Companies, Jobs, Applications
 from datetime import datetime
-from flask_login import login_required, current_user
-from app.helpers.validate_data import is_form_empty
+
+from app.utils.validate_data import is_form_empty
 
 jobs_bp = Blueprint("jobs",__name__)
 
@@ -155,12 +157,13 @@ def apply_job(job_id):
     # Check if already applied  
     if Applications.query.filter_by(user_id=current_user.id).first():
         return jsonify({"error": "You have already applied for this job"}), 409
-    
+
     try:
         # Add application with timestamp
         application = Applications(
             user_id=current_user.id,
             job_id=job_id,
+            company_id=job.company_id,
             applied_at=datetime.now()
         )
         db.session.add(application)

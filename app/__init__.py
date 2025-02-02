@@ -1,6 +1,7 @@
 from flask import Flask,session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from .extensions import socketio
 
 from dotenv import load_dotenv
 import os
@@ -27,6 +28,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 def create_app():
     # Initialize the app
     db.init_app(app)
+    # Initialize the socketio
+    socketio.init_app(app)
     # Register blueprints
     from .views.frontend import frontend_bp
     from .api.jobs import jobs_bp
