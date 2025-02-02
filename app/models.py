@@ -1,7 +1,7 @@
 from app import db
 from flask_login import UserMixin
 from sqlalchemy import DateTime
-from datetime import datetime
+from datetime import datetime, date
 from dataclasses import dataclass
 from sqlalchemy import JSON
 from sqlalchemy.dialects.mysql import LONGTEXT
@@ -11,6 +11,7 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
+    msg_id = db.Column(db.Integer, db.ForeignKey('direct_messages.id'), nullable=True)
     user_type = db.Column(db.String(100), default='Person')  # Can be 'Company' or 'Person'
     email = db.Column(db.String(100), unique=True)
     name = db.Column(db.String(100))
@@ -27,18 +28,19 @@ class User(UserMixin, db.Model):
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Fix relationships
-    sent_messages = db.relationship(
-        'DirectMessages',
-        primaryjoin="and_(foreign(DirectMessages.sender_id) == User.id, DirectMessages.sender_type == 'User')",
-        backref='user_sender',
-        lazy=True
-    )
-    received_messages = db.relationship(
-        'DirectMessages',
-        primaryjoin="and_(foreign(DirectMessages.receiver_id) == User.id, DirectMessages.receiver_type == 'User')",
-        backref='user_receiver',
-        lazy=True
-    )
+    # sent_messages = db.relationship(
+    #     'DirectMessages',
+    #     primaryjoin="and_(foreign(DirectMessages.sender_id) == User.id, DirectMessages.sender_type == 'User')",
+    #     backref='user_sender',
+    #     lazy=True
+    # )
+    # received_messages = db.relationship(
+    #     'DirectMessages',
+    #     primaryjoin="and_(foreign(DirectMessages.receiver_id) == User.id, DirectMessages.receiver_type == 'User')",
+    #     backref='user_receiver',
+    #     lazy=True
+    # )
+    direct_messages = db.relationship('DirectMessages', backref='users', lazy=True)
     @property
     def role(self):
         return "Person"
@@ -49,6 +51,7 @@ class Companies(UserMixin,db.Model):
     __tablename__ = 'companies'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    msg_id = db.Column(db.Integer, db.ForeignKey('direct_messages.id'), nullable=True)
     email = db.Column(db.String(100), unique=True)
     name = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(1000)) # Hashed password
@@ -59,6 +62,7 @@ class Companies(UserMixin,db.Model):
 
     # Relationship to jobs posted by the company
     jobs = db.relationship('Jobs', backref='company', lazy=True)
+    direct_messages = db.relationship('DirectMessages', backref='company', lazy=True)
 
     @property
     def role(self):
@@ -66,13 +70,30 @@ class Companies(UserMixin,db.Model):
 
 
 # Create association table
-applications = db.Table('applications',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
-    db.Column('job_id', db.Integer, db.ForeignKey('jobs.id')),
-    # Need a column to store the resume of the user
+# applications = db.Table('applications',
+#     db.Column('id', db.Integer,primary_key=True),
+#     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
+#     db.Column('job_id', db.Integer, db.ForeignKey('jobs.id')),
+#     # Need a column to store the resume of the user
     
-    db.Column('applied_at', DateTime, default=datetime.now)
-)
+#     db.Column('applied_at', DateTime, default=datetime.now)
+# )
+
+@dataclass
+class Applications(db.Model):
+    __tablename__ = 'applications'
+
+    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
+    # custom info for the application
+    applied_at:datetime = db.Column(DateTime, default=datetime.now)
+    resume = db.Column(LONGTEXT(collation='utf8mb4_unicode_ci')) # needs to change to proper datatype
+
+    @property
+    def calculate_days_applied(self):
+        days = date(self.applied_at) - date.today()
+        return f"Days passed from applied day {days}"
 
 
 @dataclass
@@ -89,9 +110,7 @@ class Jobs(db.Model):
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
     # Add relationship to applicants
-    applicants = db.relationship('User',
-                               secondary=applications,
-                               backref=db.backref('applied_jobs', lazy='dynamic'))
+    applications = db.relationship('Applications', backref='application', lazy=True)
 
 
 

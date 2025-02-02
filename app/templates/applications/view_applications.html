@@ -1,14 +1,14 @@
-{% extends "jobs/base_jobs.html" %}
+{% extends "applications/base_applications.html" %}
 
 {% block title %}My Applications{% endblock %}
 
-{% block content %}
+{% block body %}
 <div class="container mt-4">
     <h2 class="mb-4"><i class="fas fa-file-alt me-2"></i>My Applications</h2>
     
     {% if applications %}
         <div class="row">
-            {% for job, applied_at in applications %}
+            {% for job, application in applications %}
                 <div class="col-md-6 mb-3">
                     <div class="card shadow-sm">
                         <div class="card-body">
@@ -21,19 +21,33 @@
                             </p>
                             <p class="card-text">
                                 <small class="text-muted">
-                                    <i class="fas fa-clock me-2"></i>Applied on: {{ applied_at.strftime('%Y-%m-%d %H:%M') }}
+                                    <i class="fas fa-clock me-2"></i>Applied on: {{ application.applied_at.strftime('%Y-%m-%d %H:%M') }}
                                 </small>
                             </p>
                             <div class="mt-3">
                                 <button class="btn btn-sm btn-outline-primary" 
-                                        onclick="getJobInfo('{{ job.id }}', 'viewJobModal')">
+                                        onclick="getJobInfo('{{ job.id }}', 'viewApplicationModal')">
                                     <i class="fas fa-eye me-1"></i>View Details
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteApplicationModal"
+                                    onclick="deleteApplication('{{ application.id }}', '{{ job.title }}',)">
+                                    <i class="fas fa-trash"></i> Delete
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
             {% endfor %}
+        </div>
+        <!-- Pagination - Outside of application cards grid -->
+        <div class="row mt-4">
+            <div class="col">
+                {% block pagination %}
+                    {{ super() }}
+                {% endblock pagination %}
+            </div>
         </div>
     {% else %}
         <div class="alert alert-info">

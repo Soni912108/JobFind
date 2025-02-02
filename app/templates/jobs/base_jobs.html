@@ -203,6 +203,16 @@
         </div>
     </div>
 </div>
+<!-- Add Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="jobToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto" id="toastTitle"></strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
 
 {% endblock %}
 
@@ -315,29 +325,8 @@
             showToast(error.message, true);
         });
     }
-
-    document.getElementById('deleteJobModal').addEventListener('hidden.bs.modal', function () {
-        // Remove the modal-open class to unlock scrolling
-        document.body.classList.remove('modal-open');
-
-        // Remove any leftover modal backdrop elements
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) {
-            backdrop.remove();
-        }
-
-        // Ensure the scroll is unlocked
-        document.body.style.overflow = "auto";
-    });
-
-    function deleteJob(jobId, jobName) { 
-        document.getElementById('job_name').innerText = jobName;
-        document.getElementById('deleteJobForm').deleteJobId.value = jobId;
-
-        // Show the delete modal
-        var deleteJobModal = new bootstrap.Modal(document.getElementById('deleteJobModal'));
-        deleteJobModal.show();
-    }
+    
+    
     // Function to show the toast messages(or errors)
     function showToast(message, isError = false) {
         const toast = document.getElementById('jobToast');
@@ -385,6 +374,29 @@
             
             modal.show();
         });
+    }
+    
+    document.getElementById('deleteJobModal').addEventListener('hidden.bs.modal', function () {
+        // Remove the modal-open class to unlock scrolling
+        document.body.classList.remove('modal-open');
+
+        // Remove any leftover modal backdrop elements
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) {
+            backdrop.remove();
+        }
+
+        // Ensure the scroll is unlocked
+        document.body.style.overflow = "auto";
+    });
+
+    function deleteJob(jobId, jobName) { 
+        document.getElementById('job_name').innerText = jobName;
+        document.getElementById('deleteJobForm').deleteJobId.value = jobId;
+
+        // Show the delete modal
+        var deleteJobModal = new bootstrap.Modal(document.getElementById('deleteJobModal'));
+        deleteJobModal.show();
     }
 
     //function to send request to server for apply to a job

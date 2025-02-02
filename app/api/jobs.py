@@ -1,6 +1,6 @@
 from flask import Blueprint, request, flash, redirect, url_for,jsonify,session
 from app import db
-from app.models import User, Companies, Jobs, applications
+from app.models import User, Companies, Jobs, Applications
 from datetime import datetime
 from flask_login import login_required, current_user
 from app.helpers.validate_data import is_form_empty
@@ -77,6 +77,9 @@ def job_detail(job_id):
 @login_required
 def update_job():
     job_id = request.form.get('editJobId')
+    if not job_id:
+        flash("An unexpected error occurred", "warning")
+        return redirect(url_for('frontend.index'))
     # make sure job exists and belongs to the current user
     job = Jobs.query.filter_by(company_id=current_user.id, id=job_id).first()
     if not job:
@@ -106,6 +109,9 @@ def update_job():
 def delete_job():
     print("Delete job form data:", request.form)
     job_id = request.form.get("jobId")
+    if not job_id:
+        flash("An unexpected error occurred", "warning")
+        return redirect(url_for('frontend.index'))
     # make sure job exists and belongs to the current user
     job = Jobs.query.filter_by(company_id=current_user.id, id=job_id).first()
     print(f"Job to delete: ID={job.id}, Title={job.title}, Description={job.description}, Location={job.location}")
@@ -147,18 +153,19 @@ def apply_job(job_id):
         return jsonify({"error": "Only Professionals can apply for jobs."}),409
  
     # Check if already applied  
-    if current_user in job.applicants:
+    if Applications.query.filter_by(user_id=current_user.id).first():
         return jsonify({"error": "You have already applied for this job"}), 409
     
     try:
         # Add application with timestamp
-        application = applications.insert().values(
+        application = Applications(
             user_id=current_user.id,
             job_id=job_id,
             applied_at=datetime.now()
         )
-        db.session.execute(application)
+        db.session.add(application)
         db.session.commit()
+
         return jsonify({"message": "Application submitted successfully"}), 200
     except Exception as e:
         db.session.rollback()

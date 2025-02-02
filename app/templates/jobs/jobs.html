@@ -83,7 +83,9 @@ Jobs for you
                                     <span class="badge bg-primary">Your Job</span>
                                 {% endif %}
                             </div>
-                            
+                            <p class="card-text text-muted">
+                                {{ job.number_of_applicants}}
+                            </p>
                             <h6 class="card-subtitle mb-2 text-muted">
                                 <i class="fas fa-building me-2"></i>{{ job.company.name }}
                             </h6>

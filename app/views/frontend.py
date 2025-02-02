@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, jsonify,url_for
 from flask import session
 from flask_login import login_user,login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.models import (User, Companies, Jobs, DirectMessages, Notifications)
+from app.models import (User, Companies, Jobs, DirectMessages, Notifications,Applications)
 from app import db
 from app.helpers.validate_data import validate_register_data, validate_login_data,is_form_empty,validate_register_company_data,validate_register_user_data
 
@@ -35,21 +35,22 @@ def jobs():
         error_out=False
     )
     jobs_list = jobs_pagination.items
-    
+    print(jobs_list)
     # Debug print for checking job attributes
     print("=== Jobs Debug ===")
-    
     for job in jobs_list:
+        print(job)
         # check 1st if current user is Company
         if isinstance(current_user, Companies):
+            # adding bool if company is owner of a job
             job.is_owner = job.company_id == current_user.id
             print(f"Job {job.id} - Owner: {job.is_owner}")
         else:
             # For regular users, check if they've applied
-            job.already_applied = current_user in job.applicants
+            job.already_applied = True if Applications.query.filter_by(user_id=current_user.id).first() else False
             print(f"Job {job.id} - Applied: {job.already_applied}")
-            
-        print(f"Job {job.id} applicants: {[a.id for a in job.applicants]}")
+        # add the number of applicants in a job
+        job.number_of_applicants = Applications.query.count()
     
     return render_template(
         "jobs/jobs.html",
@@ -59,6 +60,69 @@ def jobs():
         total_count=jobs_pagination.total,
         user=current_user
     )
+
+
+# view_applications.html
+@frontend_bp.route("/applications", methods=["GET"])
+@login_required
+def applications_page():
+    # Check if current user is not a user - only users ca view the application page
+    if not isinstance(current_user, User):
+        flash("Can open this page!", "info")
+        return redirect(request.referrer or url_for('frontend.jobs'))
+    
+        # Get and sanitize parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search_term = request.args.get('search', '').strip()
+    
+    # Debug logging
+    print("=== Applications Search Debug ===")
+    print(f"User ID: {current_user.id}")
+    print(f"Search term: '{search_term}'")
+    print(f"Page: {page}, Per_page: {per_page}")
+    
+    # Base query
+    base_query = db.session.query(
+        Jobs,
+        Applications
+    ).join(
+        Applications,
+        Jobs.id == Applications.job_id
+    ).filter(
+        Applications.user_id == current_user.id
+    )
+    # check the len of the base_query, if 0 than user has not applied to any jobs
+    applications_count = base_query.count()
+    print(f"Applications found: {applications_count}")
+    if applications_count == 0:
+        flash("You haven't applied to any jobs yet!", "info")
+        return render_template("applications/view_applications.html", applications=[],user=current_user)
+    # Add search filter if provided
+    if search_term:
+        base_query = base_query.filter(Jobs.title.ilike(f"%{search_term}%"))
+    
+    # Add ordering
+    query = base_query.order_by(Applications.applied_at.desc())
+    
+    # Execute query with pagination
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+    # Debug results
+    print("\nQuery Results:")
+    for job, application in pagination.items:
+        print(f"Found Job: {job.title} (ID: {job.id}), Applied: {application.applied_at}(ID: {application.id})")
+        
+    print(f"Total results: {pagination.total}\n")
+    
+    return render_template(
+        "applications/view_applications.html",
+        applications=pagination.items,
+        pagination=pagination,
+        total_count=pagination.total,
+        user=current_user,
+    )
+
 
 # Notifications
 @frontend_bp.route("/notifications")
@@ -75,9 +139,32 @@ def notifications():
 @frontend_bp.route("/messages")
 @login_required
 def messages():
-    all_messages = DirectMessages.query.filter_by(receiver_id=current_user.id).all()
-    return render_template("dms/messages.html", active="messages", all_messages=all_messages)
+    requested_page = request.args.get('page', 1, type=int)
+    page = max(1, requested_page)
+    per_page = 12
 
+    search_for = request.args.get('search', '').strip()
+    if search_for:
+        base_query = DirectMessages.query.filter(DirectMessages.title.ilike(f"%{search_for}%"))
+    else:
+        base_query = DirectMessages.query
+
+    # Get paginated jobs
+    msg_pagination = base_query.order_by(DirectMessages.created_at.desc()).paginate(
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
+    msg_list = msg_pagination.items
+
+    return render_template(
+        "dms/messages.html",
+        active="messages", 
+        pagination=msg_pagination,
+        messages=msg_list,
+        total_count=msg_pagination.total,
+        user=current_user
+    )
 
 
 # Authentication
@@ -129,7 +216,7 @@ def login_post():
 
 @frontend_bp.route("/users/register")
 def register():
-    return render_template("users/register.html")
+    return render_template("users/register.html", active="register")
 
 @frontend_bp.route('/register', methods=['POST'])
 def register_post():
@@ -153,10 +240,11 @@ def register_post():
                 for error in errors:
                     flash(error, "warning")
                 return redirect(url_for("frontend.register"))
-            # Check email exists in User table
-            if User.query.filter_by(email=req_data.get("email")).first():
-                flash("Email already registered as Person.", "warning")
-                return redirect(url_for("frontend.register"))
+            # # Check email exists in User table - check moved to validate_register_user_data
+            # if User.query.filter_by(email=req_data.get("email")).first():
+            #     flash("Email already registered as Person.", "warning")
+            #     return redirect(url_for("frontend.register"))
+            
             # Create User
             user = User(
                 email=req_data.get("email"),
@@ -174,10 +262,11 @@ def register_post():
                 for error in errors:
                     flash(error, "warning")
                 return redirect(url_for("frontend.register"))
-            # Check email exists in Companies table
-            if Companies.query.filter_by(email=req_data.get("email")).first():
-                flash("Email already registered as Company.", "warning")
-                return redirect(url_for("frontend.register"))
+            # Check email exists in Companies table - check moved to validate_register_company_data
+            # if Companies.query.filter_by(email=req_data.get("email")).first():
+            #     flash("Email already registered as Company.", "warning")
+            #     return redirect(url_for("frontend.register"))
+            
             # Create Company
             company = Companies(
                 email=req_data.get("email"),
@@ -194,6 +283,7 @@ def register_post():
 
     except Exception as e:
         db.session.rollback()
+        print(f"Registration error: {e}")
         flash('Error during registration', "danger")
         return redirect(url_for('frontend.register'))
 

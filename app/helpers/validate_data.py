@@ -1,7 +1,7 @@
 import re
 import functools
 
-
+from app.models import User, Companies
 
 
 def validate_register_user_data(req_data) -> list:
@@ -17,6 +17,9 @@ def validate_register_user_data(req_data) -> list:
         errors.append("Profession is required.")
     elif len(req_data["profession"]) > 128:
         errors.append("Profession must be 128 characters or less.")
+    # Check email exists in User table
+    if User.query.filter_by(email=req_data.get("email")).first():
+        errors.append("Email already registered as Person.")
 
     return errors
 
@@ -30,7 +33,10 @@ def validate_register_company_data(req_data) -> list:
         errors.append("Description is required.")
     if not req_data.get('location'):
         errors.append("Location is required.")
-
+    # Check email exists in Companies table
+    if Companies.query.filter_by(email=req_data.get("email")).first():
+        errors.append("Email already registered as Company.")
+        
     return errors
 
 
