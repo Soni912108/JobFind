@@ -85,6 +85,7 @@ class Applications(db.Model):
 
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
     # custom info for the application
     applied_at:datetime = db.Column(DateTime, default=datetime.now)

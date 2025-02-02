@@ -1,0 +1,65 @@
+{% extends 'notifications/base_notifications.html' %}
+
+{% block head %}
+
+<style>
+    /* Hide the default 'x' icon on input[type="search"] */
+    input[type="search"]::-webkit-search-cancel-button {
+        display: none;
+    }
+  
+    input[type="search"]::-ms-clear {
+        display: none;
+    }
+  
+    input[type="search"] {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+  </style>
+{% endblock %}
+
+
+
+{% block title %}
+Notifications
+{% endblock %}
+
+
+
+{% block body %}
+
+
+<div class="container mt-4">
+
+
+    {% if all_notifications %}
+        <div>
+            {% for notification in all_notifications %}
+                <div>
+                    <span>Text {{ notification.message }}</span>
+
+                    
+                </div>
+            {% endfor %}
+        </div>
+        <!-- Pagination - Outside of notification cards grid -->
+        <div class="row mt-4">
+            <div class="col">
+                {% block pagination %}
+                    {{ super() }}
+                {% endblock pagination %}
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            No notification found.
+        </div>
+    {% endif %}
+</div>
+
+
+
+<!-- end of the block body -->
+{% endblock %}
