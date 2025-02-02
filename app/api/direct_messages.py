@@ -5,3 +5,6 @@ from datetime import datetime
 from flask_login import login_user,login_required, current_user, logout_user
 
 direct_messages_bp = Blueprint("direct_messages",__name__)
+
+
+# here will create the api to crud msg 

@@ -2,8 +2,13 @@ from flask import Flask,session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 
-db = SQLAlchemy()
+from dotenv import load_dotenv
+import os
+# load the env keys
+load_dotenv()
 
+# db
+db = SQLAlchemy()
 app = Flask(__name__)
 
 # this equals 50 MB memory size that the flask server can handle - 
@@ -15,9 +20,8 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * MEGABYTE #  50 MB memory size
 app.config['MAX_FORM_MEMORY_SIZE'] = 50 * MEGABYTE #  50 MB memory size
 
 # Configure the app 
-# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:RrushKumbullaQepe%4030@jf_mysql_db/mydb"
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:RrushKumbullaQepe%4030@jf_mysql_db/mydb"
-app.config['SECRET_KEY'] = 'secret-key-goes-here'
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv('SQLALCHEMY_DATABASE_URI')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 def create_app():
@@ -58,6 +62,7 @@ def create_app():
     from .models import DirectMessages 
     from .models import Jobs 
     from .models import Notifications
+    from .models import Applications
     
     # Create tables
     with app.app_context():

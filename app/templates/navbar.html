@@ -44,7 +44,7 @@
                     </li>
                     {% if session.get('user_type') == 'Person' %}
                     <li class="nav-item">
-                        <a href="{{ url_for('applications.applications_page') }}" 
+                        <a href="{{ url_for('frontend.applications_page') }}" 
                            class="nav-link {% if active=='applications' %}navbar-active{% endif %}">
                             <i class="fas fa-file-alt me-1"></i>Applications
                         </a>
