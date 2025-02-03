@@ -6,4 +6,5 @@ __pycache__
 *.log
 .env
 migrations/
-app/helpers/bulk_insert.py
+app/utils/bulk_insert.py
+app/utils/bulk_insert2.py

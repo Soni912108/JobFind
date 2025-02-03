@@ -7,6 +7,15 @@ from sqlalchemy import JSON
 from sqlalchemy.dialects.mysql import LONGTEXT
 
 
+class SimpleRepr(object):
+    """A mixin implementing a simple __repr__."""
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+            )
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
@@ -44,7 +53,33 @@ class User(UserMixin, db.Model):
     @property
     def role(self):
         return "Person"
+    
+    def __str__(self):
+        return f"User: {self.name}, Email: {self.email}, Profession: {self.profession}"
 
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+            )
+
+    def __json__(self):
+        return {
+            "id": self.id,
+            "user_type": self.user_type,
+            "email": self.email,
+            "name": self.name,
+            "surname": self.surname,
+            "profession": self.profession,
+            "skills": self.skills,
+            "experience": self.experience,
+            "location": self.location,
+            "current_company_info": self.current_company_info,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            
+        }
 
 
 class Companies(UserMixin,db.Model):
@@ -68,6 +103,27 @@ class Companies(UserMixin,db.Model):
     def role(self):
         return "Company"
 
+    def __repr__(self):
+        repr_str = f"{self.__class__.__name__}"
+        repr_str += '('
+        
+        for key, val in self.__dict__.items():
+            val= f"'{val}'" if isinstance(val, str) else val
+            repr_str += f"{key}={val}, "
+        
+        return repr_str.strip(", ") + ')'
+    
+    def __json__(self):
+        return {
+            "id": self.id,
+            "email": self.email,
+            "name": self.name,
+            "description": self.description,
+            "location": self.location,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            
+        }
 
 # Create association table
 # applications = db.Table('applications',
@@ -96,6 +152,12 @@ class Applications(db.Model):
         days = date(self.applied_at) - date.today()
         return f"Days passed from applied day {days}"
 
+    def __json__(self):
+        return {
+            "id": self.id,
+            "applied_at": self.applied_at,
+            "resume": self.resume,  
+        }
 
 @dataclass
 class Jobs(db.Model):
@@ -113,7 +175,18 @@ class Jobs(db.Model):
     # Add relationship to applicants
     applications = db.relationship('Applications', backref='application', lazy=True)
 
-
+    def __json__(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "salary": self.salary,
+            "location": self.location,
+            "likes": self.likes,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            
+        }
 
 @dataclass
 class DirectMessages(db.Model):
@@ -128,7 +201,18 @@ class DirectMessages(db.Model):
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
-
+    def __json__(self):
+        return {
+            "id": self.id,
+            "sender_id": self.sender_id,
+            "sender_type": self.sender_type,
+            "receiver_id": self.receiver_id,
+            "receiver_type": self.receiver_type,
+            "message": self.message,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            
+        }
 
 
 class Notifications(db.Model):
@@ -140,3 +224,14 @@ class Notifications(db.Model):
     read = db.Column(db.Boolean, default=False)
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    def __json__(self):
+        return {
+            "id": self.id,
+            "receiver_id": self.receiver_id,
+            "message": self.message,
+            "read": self.read,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            
+        }
