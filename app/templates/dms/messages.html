@@ -1,7 +1,6 @@
 {% extends 'dms/base_messages.html' %}
 
 {% block head %}
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
 
 <style>
     /* Hide the default 'x' icon on input[type="search"] */
@@ -33,38 +32,29 @@ Messages
 
 
 <div class="container mt-4">
-    <div class="container-fluid mb-4">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="d-flex align-items-center">
-                    <div class="search-container position-relative me-2 flex-grow-1">
-                        <input type="search" 
-                               class="form-control" 
-                               id="messageSearch" 
-                               placeholder="Search messages" 
-                               {% if request.args.get('search') %}
-                               value="{{ request.args.get('search') }}"
-                               {% endif %}>
-                        <i class="fas fa-search position-absolute end-0 top-50 translate-middle-y me-3"></i>
-                    </div>
-                    <button id="removeFilters" 
-                            class="btn btn-danger" 
-                            title="Remove Filters" 
-                            style="display: none;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div class="mb-3 position-relative">
+        <input type="text" id="users_search" class="form-control" placeholder="Search users by name..." oninput="searchUsers()">
+        <div id="users_results" class="dropdown-menu position-absolute" style="max-height: 200px; overflow-y: auto; display: none;"></div>
+            <input type="hidden" id="user_id" name="user_id"> <!-- Hidden input for storing the selected user ID -->
+        <p class="text-danger" id="user_error" style="display: none;">No users found.</p>
+     </div>
 
+    <div class="message_holder"></div>
+    
+    
+    
+    <form action="" method="POST">
+      <input type="text" class="message" placeholder="Messages"/>
+      {% if user.is_authenticated %}
+        <input type="hidden" class="username" value="{{ user.name }}">
+      {% endif %}
+      <input type="submit"/>
+    </form>
     {% if messages %}
         <div>
             {% for message in messages %}
                 <div>
                     <span>Text {{ message.message }}</span>
-
-                    
                 </div>
             {% endfor %}
         </div>
@@ -77,19 +67,40 @@ Messages
             </div>
         </div>
     {% else %}
-        <div class="alert alert-info text-center">
+        <div class="alert alert-info text-center" id="no-messages">
             No messages found.
         </div>
     {% endif %}
 </div>
 
 {% block scripts %}
-<script type="text/javascript" charset="utf-8">
-    var socket = io();
-    socket.on('connect', function() {
-        socket.emit('my event', {data: 'I\'m connected!'});
-    });
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+<script type="text/javascript">
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+    socket.on( 'connect', function() {
+      socket.emit( 'my event', {
+        data: 'User Connected'
+      } )
+      var form = $( 'form' ).on( 'submit', function( e ) {
+        e.preventDefault()
+        let user_name = $( 'input.username' ).val()
+        let user_input = $( 'input.message' ).val()
+        socket.emit( 'my event', {
+          user_name : user_name,
+          message : user_input
+        } )
+        $( 'input.message' ).val( '' ).focus()
+      } )
+    } )
+    socket.on( 'my response', function( msg ) {
+      console.log( msg )
+      if( typeof msg.user_name !== 'undefined' ) {
+        $( 'alert alert-info text-center' ).remove()
+        $( 'div.message_holder' ).append( '<div><b style="color: #000">'+msg.user_name+'</b> '+msg.message+'</div>' )
+      }
+    })
+  </script>
 {% endblock %}
 <!-- end of the block body -->
 {% endblock %}
