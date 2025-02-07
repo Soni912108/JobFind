@@ -36,6 +36,9 @@ def validate_register_company_data(req_data) -> list:
     # Check email exists in Companies table
     if Companies.query.filter_by(email=req_data.get("email")).first():
         errors.append("Email already registered as Company.")
+    # Check name exists in Companies table
+    if Companies.query.filter_by(name=req_data.get("name")).first():
+        errors.append("Name already in use.")
         
     return errors
 

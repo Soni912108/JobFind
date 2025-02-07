@@ -31,30 +31,26 @@ def jobs():
     else:
         base_query = Jobs.query
 
-    # Get paginated jobs
     jobs_pagination = base_query.order_by(Jobs.created_at.desc()).paginate(
         page=page,
         per_page=per_page,
         error_out=False
     )
     jobs_list = jobs_pagination.items
-    print(jobs_list)
-    # Debug print for checking job attributes
+
     print("=== Jobs Debug ===")
     for job in jobs_list:
-        print(job)
-        # check 1st if current user is Company
         if isinstance(current_user, Companies):
-            # adding bool if company is owner of a job
             job.is_owner = job.company_id == current_user.id
             print(f"Job {job.id} - Owner: {job.is_owner}")
         else:
-            # For regular users, check if they've applied
-            job.already_applied = True if Applications.query.filter_by(user_id=current_user.id).first() else False
+            application = Applications.query.filter_by(job_id=job.id, user_id=current_user.id).first()
+            job.already_applied = application is not None
             print(f"Job {job.id} - Applied: {job.already_applied}")
-        # add the number of applicants in a job
-        job.number_of_applicants = Applications.query.count()
-    
+        
+        job.number_of_applicants = Applications.query.filter_by(job_id=job.id).count()
+        print(f"Number of applicants {job.number_of_applicants}")
+    print("=== Jobs Debug ===")
     return render_template(
         "jobs/jobs.html",
         active="jobs", 
@@ -63,6 +59,7 @@ def jobs():
         total_count=jobs_pagination.total,
         user=current_user
     )
+
 
 
 # view_applications.html

@@ -35,7 +35,7 @@ class User(UserMixin, db.Model):
     # Timestamps for tracking
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
-
+    direct_messages = db.relationship('DirectMessages', backref='users', lazy=True)
     # Fix relationships
     # sent_messages = db.relationship(
     #     'DirectMessages',
@@ -49,7 +49,7 @@ class User(UserMixin, db.Model):
     #     backref='user_receiver',
     #     lazy=True
     # )
-    direct_messages = db.relationship('DirectMessages', backref='users', lazy=True)
+    
     @property
     def role(self):
         return "Person"
@@ -89,6 +89,7 @@ class Companies(UserMixin,db.Model):
     msg_id = db.Column(db.Integer, db.ForeignKey('direct_messages.id'), nullable=True)
     email = db.Column(db.String(100), unique=True)
     name = db.Column(db.String(100), unique=True)
+    user_type = db.Column(db.String(100), default='Company') 
     password = db.Column(db.String(1000)) # Hashed password
     description = db.Column(LONGTEXT) 
     location = db.Column(db.String(100))
@@ -96,7 +97,7 @@ class Companies(UserMixin,db.Model):
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationship to jobs posted by the company
-    jobs = db.relationship('Jobs', backref='company', lazy=True)
+    jobs = db.relationship('Jobs', backref='company', lazy=True,cascade="all, delete-orphan")
     direct_messages = db.relationship('DirectMessages', backref='company', lazy=True)
 
     @property
@@ -173,7 +174,7 @@ class Jobs(db.Model):
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
     # Add relationship to applicants
-    applications = db.relationship('Applications', backref='application', lazy=True)
+    applications = db.relationship('Applications', backref='application', lazy=True,cascade="all, delete-orphan")
 
     def __json__(self):
         return {
@@ -198,6 +199,7 @@ class DirectMessages(db.Model):
     receiver_id = db.Column(db.Integer, nullable=False, index=True)
     receiver_type = db.Column(db.String(50), nullable=False, index=True)  # 'User' or 'Company'
     message = db.Column(LONGTEXT)  # MySQL-specific long text field
+    room = db.Column(db.String(100), nullable=False, index=True)    
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
@@ -209,9 +211,8 @@ class DirectMessages(db.Model):
             "receiver_id": self.receiver_id,
             "receiver_type": self.receiver_type,
             "message": self.message,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-            
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None,
         }
 
 

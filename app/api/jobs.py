@@ -142,8 +142,6 @@ def apply_job(job_id):
     print("==== Job Application Debug ====")
     print(f"Request Method: {request.method}")
     print(f"Job ID from URL: {job_id}")
-    print("============================")
-
 
     # Check if job exists
     job = Jobs.query.filter_by(id=job_id).first()
@@ -153,9 +151,12 @@ def apply_job(job_id):
     # check if the user is a Company
     if isinstance(current_user, Companies) or session.get('user_type') == 'Company':
         return jsonify({"error": "Only Professionals can apply for jobs."}),409
- 
+    # Base query
+    already_applied = Applications.query.filter_by(job_id=job.id, user_id=current_user.id).first()
+    print(already_applied)
+    print("============================")
     # Check if already applied  
-    if Applications.query.filter_by(user_id=current_user.id).first():
+    if already_applied is not None:
         return jsonify({"error": "You have already applied for this job"}), 409
 
     try:
