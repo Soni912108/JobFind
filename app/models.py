@@ -190,16 +190,46 @@ class Jobs(db.Model):
         }
 
 @dataclass
+class Rooms(db.Model):
+    __tablename__ = "rooms"
+
+    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
+    name =  db.Column(db.String(100))
+    room_owner_id = db.Column(db.Integer, nullable=False, index=True)
+    room_owner_name = db.Column(db.String(100)) # more simple way to add this info
+    room_owner_type= db.Column(db.String(100))
+
+    other_user_id = db.Column(db.Integer, nullable=False, index=True)
+    other_user_type = db.Column(db.String(100))
+    banned_user_id = db.Column(db.Integer, default=False)
+
+    created_at = db.Column(DateTime, default=datetime.now)
+    updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    messages = db.relationship('DirectMessages', backref='direct_messages', lazy=True,cascade="all, delete-orphan")
+
+    def __json__(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "room_owner_id": self.room_owner_id,
+            "users_in_the_room": self.users_in_the_room,
+            "receiver_type": self.banned_user_id,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None,
+        }
+    
+
+@dataclass
 class DirectMessages(db.Model):
     __tablename__ = 'direct_messages'
 
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
+    room_id = db.Column(db.Integer, db.ForeignKey('rooms.id'), nullable=False)
     sender_id = db.Column(db.Integer, nullable=False, index=True)
-    sender_type = db.Column(db.String(50), nullable=False, index=True)  # 'User' or 'Company'
     receiver_id = db.Column(db.Integer, nullable=False, index=True)
-    receiver_type = db.Column(db.String(50), nullable=False, index=True)  # 'User' or 'Company'
     message = db.Column(LONGTEXT)  # MySQL-specific long text field
-    room = db.Column(db.String(100), nullable=False, index=True)    
+      
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
@@ -207,9 +237,7 @@ class DirectMessages(db.Model):
         return {
             "id": self.id,
             "sender_id": self.sender_id,
-            "sender_type": self.sender_type,
             "receiver_id": self.receiver_id,
-            "receiver_type": self.receiver_type,
             "message": self.message,
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
             "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None,

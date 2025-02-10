@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, jsonify,url_for
 from flask import session
 from flask_login import login_user,login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.models import (User, Companies, Jobs, DirectMessages, Notifications,Applications)
+from app.models import (User, Companies, Jobs, DirectMessages, Notifications,Applications,Rooms)
 from app import db
 from app.utils.validate_data import (validate_register_data, validate_login_data,is_form_empty,
                                      validate_register_company_data,validate_register_user_data)
@@ -156,35 +156,41 @@ def notifications():
     )
 
 # Messages
-@frontend_bp.route("/messages")
+@frontend_bp.route("/rooms")
 @login_required
-def messages():
+def rooms():
     requested_page = request.args.get('page', 1, type=int)
     page = max(1, requested_page)
     per_page = 12
 
     search_for = request.args.get('search', '').strip()
-    if search_for:
-        # filter only the messages that were send or received by the current_user.id
-        base_query = DirectMessages.query.filter((DirectMessages.sender_id == current_user.id) | (DirectMessages.receiver_id == current_user.id),
-                                                DirectMessages.title.ilike(f"%{search_for}%"))
-    else:
-        base_query = DirectMessages.query.filter((DirectMessages.sender_id == current_user.id) | (DirectMessages.receiver_id == current_user.id))
+    
+    # Create base query checking owner and participants
+    base_query = Rooms.query.filter(
+        db.or_(
+            Rooms.room_owner_id == current_user.id,
+            Rooms.other_user_id == current_user.id
+        )
+    )
 
-    # Get paginated jobs
-    msg_pagination = base_query.order_by(DirectMessages.created_at.desc()).paginate(
+    # Add search filter if provided
+    if search_for:
+        base_query = base_query.filter(Rooms.name.ilike(f"%{search_for}%"))
+
+    # Get paginated rooms
+    rooms_pagination = base_query.order_by(Rooms.created_at.desc()).paginate(
         page=page,
         per_page=per_page,
         error_out=False
     )
-    msg_list = msg_pagination.items
+    rooms_list = rooms_pagination.items
 
     return render_template(
-        "dms/messages.html",
-        active="messages", 
-        pagination=msg_pagination,
-        messages=msg_list,
-        total_count=msg_pagination.total,
+        "dms/rooms.html",
+        active="rooms", 
+        pagination=rooms_pagination,
+        rooms=rooms_list,
+        total_count=rooms_pagination.total,
         user=current_user
     )
 
