@@ -1,65 +1,89 @@
 {% extends 'notifications/base_notifications.html' %}
 
 {% block head %}
-
 <style>
-    /* Hide the default 'x' icon on input[type="search"] */
-    input[type="search"]::-webkit-search-cancel-button {
-        display: none;
-    }
-  
-    input[type="search"]::-ms-clear {
-        display: none;
-    }
-  
-    input[type="search"] {
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-    }
-  </style>
+  /* Custom styles for notifications */
+  .notification-card {
+    margin-bottom: 1rem;
+  }
+  .notification-card .card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .notification-message {
+    font-size: 1rem;
+  }
+  .notification-timestamp {
+    font-size: 0.8rem;
+    color: #6c757d;
+  }
+</style>
 {% endblock %}
-
-
 
 {% block title %}
 Notifications
 {% endblock %}
 
-
-
 {% block body %}
-
-
 <div class="container mt-4">
-
-
-    {% if all_notifications %}
-        <div>
-            {% for notification in all_notifications %}
-                <div>
-                    <span>Text {{ notification.message }}</span>
-
-                    
-                </div>
-            {% endfor %}
-        </div>
-        <!-- Pagination - Outside of notification cards grid -->
-        <div class="row mt-4">
-            <div class="col">
-                {% block pagination %}
-                    {{ super() }}
-                {% endblock pagination %}
+  {% if all_notifications %}
+    <div class="row">
+      {% for notification in all_notifications %}
+        <div class="col-md-12">
+          <div class="card notification-card">
+            <div class="card-body">
+              <div>
+                <p class="notification-message mb-0">{{ notification.message }}</p>
+                <small class="notification-timestamp">{{ notification.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+              </div>
+              <div>
+                {% if not notification.read %}
+                  <button class="btn btn-sm btn-outline-primary" 
+                          onclick="markAsRead('{{ notification.id }}')">
+                    Mark as Read
+                  </button>
+                {% endif %}
+              </div>
             </div>
+          </div>
         </div>
-    {% else %}
-        <div class="alert alert-info text-center">
-            No notification found.
-        </div>
-    {% endif %}
+      {% endfor %}
+    </div>
+    <!-- Pagination - Outside of notification cards grid -->
+    <div class="row mt-4">
+      <div class="col">
+        {% block pagination %}
+          {{ super() }}
+        {% endblock pagination %}
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-info text-center">
+      No notification found.
+    </div>
+  {% endif %}
 </div>
 
-
-
-<!-- end of the block body -->
+<script>
+  // Example JavaScript function to mark a notification as read.
+  // You can wire this up to your backend endpoint.
+  function markAsRead(notificationId) {
+    fetch(`/notifications/notification/mark_read/${notificationId}`, {
+      method: 'POST'
+    })
+    .then(response => {
+      if (response.ok) {
+        // Optionally, update the UI to remove or style the notification differently.
+        location.reload();
+      } else {
+        alert('Error marking notification as read.');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error marking notification as read.');
+    });
+  }
+</script>
 {% endblock %}

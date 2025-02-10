@@ -1,0 +1,299 @@
+{% extends 'dms/base_messages.html' %}
+
+{% block head %}
+<style>
+.rooms-container {
+    padding: 20px;
+}
+
+.rooms-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.room-card {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.create-room {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.search-container {
+    position: relative;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.selected-user {
+    margin: 10px 0;
+    padding: 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#removeUser {
+    background: none;
+    border: none;
+    color: #ff4444;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0 5px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+input, button {
+    padding: 8px;
+    margin: 5px 0;
+}
+
+button[type="submit"] {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button[type="submit"]:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+button[type="submit"]:not(:disabled):hover {
+    background-color: #0056b3;
+}
+
+.rooms-container {
+    margin: 20px 0;
+}
+
+.room-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #fff;
+}
+
+.room-info {
+    flex-grow: 1;
+}
+
+.join-room-btn {
+    margin-left: 15px;
+}
+</style>
+{% endblock %}
+
+{% block title %}
+Rooms
+{% endblock %}
+
+
+
+{% block body %}
+
+
+<div class="container mt-4">
+    <!-- Header Section -->
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="d-flex align-items-center">
+                <i class="fas fa-envelope me-3 text-primary"></i>
+                <span class="fw-bold">Rooms</span>
+            </h2>
+            <button class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#newRoomModal">
+                <i class="fas fa-plus me-2"></i>
+                New Room
+            </button>
+        </div>
+    </div>
+
+    <!-- Search/New Room Modal -->
+    <div class="modal fade" id="newRoomModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">New Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Form to create new room -->
+                    <form id="newRoomForm">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="roomName" name="name" placeholder="Room Name" required>
+                        </div>
+                        
+                        <!-- Search input field -->
+                        <div class="search-container mb-3">
+                            <input type="text" class="form-control" id="userSearch" placeholder="Search for user..." autocomplete="off">
+                            <div id="searchResults" class="search-results"></div>
+                        </div>
+
+                        <!-- Hidden input to store selected user ID -->
+                        <input type="hidden" id="selectedUserId" name="selected_user_id">
+                        
+                        <div id="selectedUserDisplay" class="selected-user" style="display: none;">
+                            Selected User: <span id="userDisplayName"></span>
+                            <button type="button" id="removeUser">&times;</button>
+                        </div>
+
+                        <button type="button" onclick="createRoom()" class="btn btn-primary" id="createRoomBtn" disabled>Create Room</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Display available rooms -->
+    <div class="rooms-container">
+        <h2>Available Rooms</h2>
+        <div class="rooms-list">
+            {% for room in rooms %}
+            <div class="room-item">
+                <div class="room-info">
+                    <h5>{{ room.name }}</h5>
+                    <p>Owner Name: {{ room.room_owner_name }}</p>
+                    <p>Owner ID: {{ room.room_owner_id }}</p>
+                    <p>Created: {{ room.created_at }}</p>
+                    <p>Last Updated: {{ room.updated_at }}</p>
+                </div>
+                <button class="btn btn-primary join-room-btn" onclick="joinRoom('{{ room.id }}')">
+                    Join Room
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+
+
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // User search functionality
+    $(document).ready(function() {
+        $('#userSearch').on('input', function() {
+            const searchTerm = $(this).val().trim();
+            if (searchTerm.length >= 1) {
+                $.ajax({
+                    url: `/messages/search_users/${searchTerm}`,
+                    method: 'GET',
+                    success: function(data) {
+                        if (data.error) {
+                            $('#searchResults').html(`<div class="list-group-item text-muted">${data.error}</div>`);
+                            return;
+                        }
+                        const resultsHtml = data.users.map(([id, name]) => `
+                            <div class="list-group-item list-group-item-action" 
+                                onclick="selectUser('${id}', '${name}')">
+                                ${name}
+                            </div>
+                        `).join('');
+                        $('#searchResults').html(resultsHtml);
+                        $('#searchResults').show();
+                    },
+                    error: function(error) {
+                        console.error('Search error:', error);
+                        $('#searchResults').html('<div class="list-group-item text-danger">Error searching users</div>');
+                    }
+                });
+            } else {
+                $('#searchResults').empty().hide();
+            }
+        });
+    });
+
+    function selectUser(userId, userName) {
+        $('#selectedUserId').val(userId);
+        $('#userDisplayName').text(userName);
+        $('#selectedUserDisplay').show();
+        $('#userSearch').val('');
+        $('#searchResults').empty().hide();
+        $('#createRoomBtn').prop('disabled', false);
+    }
+
+    $('#removeUser').on('click', function() {
+        $('#selectedUserId').val('');
+        $('#selectedUserDisplay').hide();
+        $('#createRoomBtn').prop('disabled', true);
+    });
+
+    function createRoom() {
+        const roomName = $('#roomName').val();
+        const otherUserId = $('#selectedUserId').val();
+        
+        if (!otherUserId) {
+            alert('Please select a user first');
+            return;
+        }
+
+        const formData = {
+            name: roomName,
+            other_user: { other_user_id: parseInt(otherUserId) }
+        };
+
+        $.ajax({
+            url: '/messages/room/new',
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    window.location.reload();
+                } else {
+                    alert('Error creating room: ' + response.message);
+                }
+            },
+            error: function(error) {
+                console.error('Error:', error);
+                alert('Error creating room');
+            }
+        });
+    }
+
+    function joinRoom(roomId) {
+        // Simple form submission to handle the POST request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/messages/room/join/${roomId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+{% endblock %}
+
+
+<!-- end of the block body -->
+{% endblock %}

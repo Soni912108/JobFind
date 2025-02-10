@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import User, Companies, Jobs, Applications
 from datetime import datetime
-
+from .notifications import create_notification
 from app.utils.validate_data import is_form_empty
 
 jobs_bp = Blueprint("jobs",__name__)
@@ -170,8 +170,14 @@ def apply_job(job_id):
         db.session.add(application)
         db.session.commit()
 
+        # Create a notification for the company receiving the application.
+        notif_message = f"{current_user.name} applied for your job '{job.title}'"
+        create_notification(job.company_id, notif_message, emit_notification=True)
+
         return jsonify({"message": "Application submitted successfully"}), 200
     except Exception as e:
         db.session.rollback()
         print("Error applying for job:", str(e))
         return jsonify({"error": "Error applying for job"}), 500
+
+    
