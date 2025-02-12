@@ -59,9 +59,11 @@ Messages
 
 <div class="container">
     <div class="chat-header">
-        <p>Room Owner: {{ room.room_owner_name }}</p>
+        {% if is_room_owner %}
+            <p>Room Owner: {{ user.name }}</p>
+        {% endif %}
         <h3>{{ room.name }}</h3>
-        <p>Chatting with: {{ other_user.name }}</p>
+        <p>Chatting with: {{ other_user_name }}</p>
     </div>
 
     <div class="messages-container" id="messagesContainer">

@@ -1,44 +1,47 @@
-from flask import Blueprint, request, render_template,flash, redirect, url_for,jsonify,session
-from flask_socketio import send, emit,join_room,rooms  
-from flask_login import login_user,login_required, current_user, logout_user
+from flask import Blueprint, request, render_template, flash, redirect, url_for, jsonify
+from flask_socketio import send, emit, join_room, rooms
+from flask_login import login_required, current_user
+from datetime import datetime
 # local
 from app import db
 from app.extensions import socketio
-from app.models import User, Companies, Jobs,DirectMessages,Notifications,SimpleRepr,Rooms
-from datetime import datetime
+from app.models import User, Person, Company, Room, Message
 from .notifications import create_notification
-from app.utils.validate_data import is_form_empty
-import json
+from app.utils.validate_data import is_form_empty, validate_new_room_data
 
+direct_messages_bp = Blueprint("direct_messages", __name__)
 
-
-direct_messages_bp = Blueprint("direct_messages",__name__)
-
-
-# create new room
-@direct_messages_bp.route("room/new",  methods=["POST"])
+@direct_messages_bp.route("room/new", methods=["POST"])
 @login_required
 def new_room():
-    print(request.form)
-    # validate the form
-    if is_form_empty(request.form):
-        flash("Missing data, please fill out the form", "warning")
-
     try:
-        # check if the user is a Company/User - to get the name
-        room_owner_name = User.query.filter(User.id == current_user.id).first().name
-        if room_owner_name is None:
-            room_owner_name =  Companies.query.filter(Companies.id == current_user.id).first().name
-            other_user_type = "Company"
+        # Validate form data
+        if is_form_empty(request.form):
+            flash("Missing data, please fill out the form", "warning")
+            return jsonify({"success": False, "message": "Missing data"})
 
-        new_room = Rooms(
-            name = request.form.get("name"),
-            room_owner_id = current_user.id,
-            room_owner_name= room_owner_name,
-            room_owner_type= "Person" if User.query.filter(User.id == current_user.id).first() else "Company",
-            other_user_id = request.form.get("other_user_id"),
-            other_user_type =other_user_type
+        errors = validate_new_room_data(request.form)
+        if errors:
+            for error in errors:
+                flash(error, "warning")
+            return jsonify({"success": False, "message": "Validation errors"})
+
+        # Get the other user from the unified User table
+        other_user_id = request.form.get("other_user_id")
+        other_user = User.query.get(other_user_id)
+        
+        if not other_user:
+            flash("Invalid other user", "danger")
+            return jsonify({"success": False, "message": "Invalid other user"})
+
+        # Create new room with simplified structure
+        new_room = Room(
+            name=request.form.get("name"),
+            owner_id=current_user.id,
+            other_user_id=other_user.id,
+            is_active=True
         )
+        
         db.session.add(new_room)
         db.session.commit()
 
@@ -50,58 +53,129 @@ def new_room():
         flash("Error creating room", "danger")
         return jsonify({"success": False, "message": str(e)})
 
-
-
-# join a existing room(in which the user is part of)
-@direct_messages_bp.route("room/join/<int:room_id>",  methods=["POST"])
+@direct_messages_bp.route("room/join/<int:room_id>", methods=["POST"])
 @login_required
-def join_room(room_id):
+def join_room_route(room_id):
     try:
-        # Get the room and verify user has access
-        room = Rooms.query.get_or_404(room_id)
-
-        # Check if current user is in the room
-        if str(current_user.id) not in [str(room.room_owner_id), str(room.other_user_id)]:
-            flash("You don't have access to this room", "danger")
+        if not room_id:
             return redirect(url_for('frontend.rooms'))
 
-        # Get all messages for this room
-        messages = DirectMessages.query.filter_by(room_id=room_id).order_by(DirectMessages.created_at.asc()).all()
+        # Get room and check authorization
+        room = Room.query.filter(
+            Room.id == room_id,
+            db.or_(
+                Room.owner_id == current_user.id,
+                Room.other_user_id == current_user.id
+            )
+        ).first()
+
+        if not room:
+            flash("Room not found or access denied", "danger")
+            return redirect(url_for('frontend.rooms'))
+
+        # Get other participant's info using the helper method
+        other_participant = room.get_other_participant(current_user.id)
+        is_room_owner = current_user.id == room.owner_id
+
+        # Get messages for this room
+        messages = Message.query.filter_by(room_id=room_id)\
+                              .order_by(Message.created_at.asc())\
+                              .all()
 
         return render_template(
             "dms/messages.html",
             room=room,
             messages=messages,
-            other_user=room.other_user_id,
-            room_owner=room.room_owner_id,
-            room_owner_name=room.room_owner_name,
+            other_user=other_participant.id,
+            other_user_name=other_participant.name,
+            other_user_type=other_participant.user_type,
+            is_room_owner=is_room_owner,
             user=current_user
         )
-
     except Exception as e:
-        print("Error joining room:", str(e))
+        print(f"Error joining room: {str(e)}")
         flash("Error accessing room", "danger")
         return redirect(url_for('frontend.rooms'))
 
-    
-
-
-
-
-
-# here will create the api to crud msg 
-# def get_private_room(user1_id, user2_id):
-#     try:
-#         # Convert both IDs to integers for comparison
-#         user1_int = int(user1_id)
-#         user2_int = int(user2_id)
+@direct_messages_bp.route("search_users/<string:input>", methods=["GET"])
+@login_required
+def search_users_for_new_messages(input):
+    _input = input.strip()
+    if _input:
+        # Search in unified User table
+        users_found = User.query.filter(
+            db.and_(
+                User.name.ilike(f"%{_input}%"),
+                User.id != current_user.id  # Don't include current user
+            )
+        ).all()
         
-#         # Sort the IDs
-#         sorted_ids = sorted([user1_int, user2_int])
-#         return f"private_{sorted_ids[0]}_{sorted_ids[1]}"
-#     except ValueError as e:
-#         print(f"Error converting IDs to integers: {e}")
-#         return None
+        if users_found:
+            users_info = [(user.id, user.name) for user in users_found]
+            return jsonify({"users": users_info})
+        
+        return jsonify({"error": "No users found for this search input"})
+    
+    return jsonify({"error": "No search input provided"})
+
+
+
+@socketio.on('new message')
+def new_message(data):
+    if not current_user.is_authenticated:
+        return False
+
+    try:
+        room_id = data.get('room_id')
+        message_text = data.get('message')
+
+        if not room_id or not message_text:
+            return False
+
+        # Verify room access
+        room = Room.query.filter(
+            Room.id == room_id,
+            db.or_(
+                Room.owner_id == current_user.id,
+                Room.other_user_id == current_user.id
+            )
+        ).first()
+
+        if not room:
+            return False
+
+        # Create new message
+        message = Message(
+            room_id=room_id,
+            sender_id=current_user.id,
+            message=message_text
+        )
+        db.session.add(message)
+        db.session.commit()
+
+        # Get other participant for notification
+        other_participant = room.get_other_participant(current_user.id)
+        
+        # Create notification for other participant
+        notif_message = f"New message from {current_user.name}"
+        create_notification(other_participant.id, notif_message, emit_notification=True)
+
+        # Emit message to room
+        emit('new message', {
+            'sender_id': current_user.id,
+            'sender_name': current_user.name,
+            'message': message_text,
+            'created_at': message.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }, room=str(room_id))
+
+        return True
+
+    except Exception as e:
+        print(f"Error handling new message: {str(e)}")
+        db.session.rollback()
+        return False
+
+
 
 
 # @socketio.on('connect')
@@ -243,30 +317,5 @@ def join_room(room_id):
 #         'created_at': dm.created_at.strftime("%Y-%m-%d %H:%M:%S")
 #     }, room=room)
 
-
-
-@direct_messages_bp.route("search_users/<string:input>",  methods=["GET"])
-@login_required
-def search_users_for_new_messages(input):
-    _input = input.strip()
-    print(_input)
-    if _input:
-        # first check the users table for the given name - Note: name is not unique in this table
-        all_users_found = User.query.filter(User.name.ilike(f"%{_input}%")).all()
-        if len(all_users_found) != 0:
-            json_users = [user.__json__() for user in all_users_found]
-            users_only_id_and_name_info = [(user["id"], user["name"]) for user in json_users]
-            return jsonify({"users" : users_only_id_and_name_info})
-
-        # search the company table
-        all_companies_found = Companies.query.filter(Companies.name.ilike(f"%{_input}%")).all()
-        if len(all_companies_found) != 0:
-            companies_json = [company.__json__() for company in all_companies_found]
-            companies_only_id_and_name_info = [(company["id"], company["name"]) for company in companies_json]
-            return jsonify({"users" : companies_only_id_and_name_info})
-        
-        return jsonify({"error": "No data found for this search input"})
-    
-    return jsonify({"error": "No data found for this search input"})
 
 

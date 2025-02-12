@@ -8,3 +8,4 @@ __pycache__
 migrations/
 app/utils/bulk_insert.py
 app/utils/bulk_insert2.py
+app/utils/old_db_design.py

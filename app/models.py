@@ -7,146 +7,143 @@ from sqlalchemy import JSON
 from sqlalchemy.dialects.mysql import LONGTEXT
 
 
-class SimpleRepr(object):
-    """A mixin implementing a simple __repr__."""
-    def __repr__(self):
-        return "<{klass} @{id:x} {attrs}>".format(
-            klass=self.__class__.__name__,
-            id=id(self) & 0xFFFFFF,
-            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
-            )
 
 class User(UserMixin, db.Model):
+    """Base User class for both Person and Company users"""
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    msg_id = db.Column(db.Integer, db.ForeignKey('direct_messages.id'), nullable=True)
-    user_type = db.Column(db.String(100), default='Person')  # Can be 'Company' or 'Person'
-    email = db.Column(db.String(100), unique=True)
-    name = db.Column(db.String(100))
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(1000), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    user_type = db.Column(db.String(20), nullable=False)  # 'person' or 'company'
+    location = db.Column(db.String(100))
+    
+    # Timestamps
+    created_at = db.Column(DateTime, default=datetime.now)
+    updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    last_login = db.Column(DateTime)
+
+    # Relationships for chat
+    rooms_owned = db.relationship('Room', foreign_keys='Room.owner_id', backref='owner', lazy=True)
+    rooms_joined = db.relationship('Room', foreign_keys='Room.other_user_id', backref='other_user', lazy=True)
+    messages = db.relationship('Message', backref='sender', lazy=True)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'user',
+        'polymorphic_on': user_type
+    }
+
+    def __str__(self):
+        return f"{self.user_type.capitalize()}: {self.name} ({self.email})"
+
+
+class Person(User):
+    """Person specific attributes and relationships"""
+    __tablename__ = 'persons'
+
+    id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     surname = db.Column(db.String(100))
     profession = db.Column(db.String(100))
-    password = db.Column(db.String(1000))
-    # more info that can be updated later on by the user
     skills = db.Column(JSON)
     experience = db.Column(JSON)
-    location = db.Column(db.String(100))
     current_company_info = db.Column(JSON)
-    # Timestamps for tracking
-    created_at = db.Column(DateTime, default=datetime.now)
-    updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
-    direct_messages = db.relationship('DirectMessages', backref='users', lazy=True)
-    # Fix relationships
-    # sent_messages = db.relationship(
-    #     'DirectMessages',
-    #     primaryjoin="and_(foreign(DirectMessages.sender_id) == User.id, DirectMessages.sender_type == 'User')",
-    #     backref='user_sender',
-    #     lazy=True
-    # )
-    # received_messages = db.relationship(
-    #     'DirectMessages',
-    #     primaryjoin="and_(foreign(DirectMessages.receiver_id) == User.id, DirectMessages.receiver_type == 'User')",
-    #     backref='user_receiver',
-    #     lazy=True
-    # )
     
-    @property
-    def role(self):
-        return "Person"
-    
-    def __str__(self):
-        return f"User: {self.name}, Email: {self.email}, Profession: {self.profession}"
+    # Relationship for job applications
+    applications = db.relationship('JobApplication', backref='applicant', lazy=True)
 
-    def __repr__(self):
-        return "<{klass} @{id:x} {attrs}>".format(
-            klass=self.__class__.__name__,
-            id=id(self) & 0xFFFFFF,
-            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
-            )
+    __mapper_args__ = {
+        'polymorphic_identity': 'person',
+    }
 
-    def __json__(self):
-        return {
-            "id": self.id,
-            "user_type": self.user_type,
-            "email": self.email,
-            "name": self.name,
-            "surname": self.surname,
-            "profession": self.profession,
-            "skills": self.skills,
-            "experience": self.experience,
-            "location": self.location,
-            "current_company_info": self.current_company_info,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-            
-        }
+    def can_apply_to_job(self):
+        return True
+
+    def can_create_job(self):
+        return False
 
 
-class Companies(UserMixin,db.Model):
+class Company(User):
+    """Company specific attributes and relationships"""
     __tablename__ = 'companies'
 
+    id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    description = db.Column(LONGTEXT)
+    
+    # Relationship for jobs
+    jobs = db.relationship('Job', backref='company', lazy=True, cascade="all, delete-orphan")
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'company',
+    }
+
+    def can_apply_to_job(self):
+        return False
+
+    def can_create_job(self):
+        return True
+
+
+class Room(db.Model):
+    """Chat room between two users"""
+    __tablename__ = 'rooms'
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    msg_id = db.Column(db.Integer, db.ForeignKey('direct_messages.id'), nullable=True)
-    email = db.Column(db.String(100), unique=True)
-    name = db.Column(db.String(100), unique=True)
-    user_type = db.Column(db.String(100), default='Company') 
-    password = db.Column(db.String(1000)) # Hashed password
-    description = db.Column(LONGTEXT) 
-    location = db.Column(db.String(100))
+    name = db.Column(db.String(100))
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    other_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
-    # Relationship to jobs posted by the company
-    jobs = db.relationship('Jobs', backref='company', lazy=True,cascade="all, delete-orphan")
-    direct_messages = db.relationship('DirectMessages', backref='company', lazy=True)
+    # Messages in this room
+    messages = db.relationship('Message', backref='room', lazy=True, cascade="all, delete-orphan")
 
-    @property
-    def role(self):
-        return "Company"
+    def get_other_participant(self, current_user_id):
+        """Get the other participant's info based on current user"""
+        if current_user_id == self.owner_id:
+            return self.other_user
+        return self.owner
 
-    def __repr__(self):
-        repr_str = f"{self.__class__.__name__}"
-        repr_str += '('
-        
-        for key, val in self.__dict__.items():
-            val= f"'{val}'" if isinstance(val, str) else val
-            repr_str += f"{key}={val}, "
-        
-        return repr_str.strip(", ") + ')'
-    
-    def __json__(self):
-        return {
-            "id": self.id,
-            "email": self.email,
-            "name": self.name,
-            "description": self.description,
-            "location": self.location,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-            
-        }
 
-# Create association table
-# applications = db.Table('applications',
-#     db.Column('id', db.Integer,primary_key=True),
-#     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
-#     db.Column('job_id', db.Integer, db.ForeignKey('jobs.id')),
-#     # Need a column to store the resume of the user
-    
-#     db.Column('applied_at', DateTime, default=datetime.now)
-# )
+class Message(db.Model):
+    """Direct messages between users"""
+    __tablename__ = 'messages'
 
-@dataclass
-class Applications(db.Model):
-    __tablename__ = 'applications'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    room_id = db.Column(db.Integer, db.ForeignKey('rooms.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message = db.Column(LONGTEXT)
+    created_at = db.Column(DateTime, default=datetime.now)
+    updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
-    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+class Job(db.Model):
+    """Job posting by a company"""
+    __tablename__ = 'jobs'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
+    title = db.Column(db.String(100))
+    description = db.Column(LONGTEXT)
+    location = db.Column(db.String(100))
+    salary = db.Column(db.String(100))
+    created_at = db.Column(DateTime, default=datetime.now)
+    updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    # Relationship to applications
+    applications = db.relationship('JobApplication', backref='job', lazy=True, cascade="all, delete-orphan")
+
+
+class JobApplication(db.Model):
+    """Job application by a person"""
+    __tablename__ = 'job_applications'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
-    # custom info for the application
-    applied_at:datetime = db.Column(DateTime, default=datetime.now)
-    resume = db.Column(LONGTEXT(collation='utf8mb4_unicode_ci')) # needs to change to proper datatype
+    applicant_id = db.Column(db.Integer, db.ForeignKey('persons.id'), nullable=False)
+    resume = db.Column(LONGTEXT)
+    applied_at = db.Column(DateTime, default=datetime.now)
 
     @property
     def calculate_days_applied(self):
@@ -159,90 +156,6 @@ class Applications(db.Model):
             "applied_at": self.applied_at,
             "resume": self.resume,  
         }
-
-@dataclass
-class Jobs(db.Model):
-    __tablename__ = 'jobs'
-
-    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)  # Foreign key to companies table
-    title = db.Column(db.String(100))
-    description = db.Column(LONGTEXT(collation='utf8mb4_unicode_ci'))  # Explicit collation
-    location = db.Column(db.String(100))
-    salary = db.Column(db.String(100))
-    likes = db.Column(db.Integer, default=0)
-    created_at = db.Column(DateTime, default=datetime.now)
-    updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
-    # Add relationship to applicants
-    applications = db.relationship('Applications', backref='application', lazy=True,cascade="all, delete-orphan")
-
-    def __json__(self):
-        return {
-            "id": self.id,
-            "title": self.title,
-            "description": self.description,
-            "salary": self.salary,
-            "location": self.location,
-            "likes": self.likes,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-            
-        }
-
-@dataclass
-class Rooms(db.Model):
-    __tablename__ = "rooms"
-
-    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    name =  db.Column(db.String(100))
-    room_owner_id = db.Column(db.Integer, nullable=False, index=True)
-    room_owner_name = db.Column(db.String(100)) # more simple way to add this info
-    room_owner_type= db.Column(db.String(100))
-
-    other_user_id = db.Column(db.Integer, nullable=False, index=True)
-    other_user_type = db.Column(db.String(100))
-    banned_user_id = db.Column(db.Integer, default=False)
-
-    created_at = db.Column(DateTime, default=datetime.now)
-    updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
-
-    messages = db.relationship('DirectMessages', backref='direct_messages', lazy=True,cascade="all, delete-orphan")
-
-    def __json__(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "room_owner_id": self.room_owner_id,
-            "users_in_the_room": self.users_in_the_room,
-            "receiver_type": self.banned_user_id,
-            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
-            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None,
-        }
-    
-
-@dataclass
-class DirectMessages(db.Model):
-    __tablename__ = 'direct_messages'
-
-    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    room_id = db.Column(db.Integer, db.ForeignKey('rooms.id'), nullable=False)
-    sender_id = db.Column(db.Integer, nullable=False, index=True)
-    receiver_id = db.Column(db.Integer, nullable=False, index=True)
-    message = db.Column(LONGTEXT)  # MySQL-specific long text field
-      
-    created_at = db.Column(DateTime, default=datetime.now)
-    updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
-
-    def __json__(self):
-        return {
-            "id": self.id,
-            "sender_id": self.sender_id,
-            "receiver_id": self.receiver_id,
-            "message": self.message,
-            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
-            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None,
-        }
-
 
 class Notifications(db.Model):
     __tablename__ = 'notifications'
@@ -264,3 +177,15 @@ class Notifications(db.Model):
             "updated_at": self.updated_at,
             
         }
+
+
+    
+class SimpleRepr(object):
+    """A mixin implementing a simple __repr__."""
+    def __repr__(self):
+        return "<{klass} @{id:x} {attrs}>".format(
+            klass=self.__class__.__name__,
+            id=id(self) & 0xFFFFFF,
+            attrs=" ".join("{}={!r}".format(k, v) for k, v in self.__dict__.items()),
+            )
+    
