@@ -183,7 +183,6 @@ Rooms
                 <div class="room-info">
                     <h5>{{ room.name }}</h5>
                     <p>Owner Name: {{ room.room_owner_name }}</p>
-                    <p>Owner ID: {{ room.room_owner_id }}</p>
                     <p>Created: {{ room.created_at }}</p>
                     <p>Last Updated: {{ room.updated_at }}</p>
                 </div>
@@ -204,36 +203,34 @@ Rooms
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     // User search functionality
-    $(document).ready(function() {
-        $('#userSearch').on('input', function() {
-            const searchTerm = $(this).val().trim();
-            if (searchTerm.length >= 1) {
-                $.ajax({
-                    url: `/messages/search_users/${searchTerm}`,
-                    method: 'GET',
-                    success: function(data) {
-                        if (data.error) {
-                            $('#searchResults').html(`<div class="list-group-item text-muted">${data.error}</div>`);
-                            return;
-                        }
-                        const resultsHtml = data.users.map(([id, name]) => `
-                            <div class="list-group-item list-group-item-action" 
-                                onclick="selectUser('${id}', '${name}')">
-                                ${name}
-                            </div>
-                        `).join('');
-                        $('#searchResults').html(resultsHtml);
-                        $('#searchResults').show();
-                    },
-                    error: function(error) {
-                        console.error('Search error:', error);
-                        $('#searchResults').html('<div class="list-group-item text-danger">Error searching users</div>');
+    $('#userSearch').on('input', function() {
+        const searchTerm = $(this).val().trim();
+        if (searchTerm.length >= 1) {
+            $.ajax({
+                url: `/messages/search_users/${searchTerm}`,
+                method: 'GET',
+                success: function(data) {
+                    if (data.error) {
+                        $('#searchResults').html(`<div class="list-group-item text-muted">${data.error}</div>`);
+                        return;
                     }
-                });
-            } else {
-                $('#searchResults').empty().hide();
-            }
-        });
+                    const resultsHtml = data.users.map(([id, name]) => `
+                        <div class="list-group-item list-group-item-action" 
+                            onclick="selectUser('${id}', '${name}')">
+                            ${name}
+                        </div>
+                    `).join('');
+                    $('#searchResults').html(resultsHtml);
+                    $('#searchResults').show();
+                },
+                error: function(error) {
+                    console.error('Search error:', error);
+                    $('#searchResults').html('<div class="list-group-item text-danger">Error searching users</div>');
+                }
+            });
+        } else {
+            $('#searchResults').empty().hide();
+        }
     });
 
     function selectUser(userId, userName) {
@@ -262,7 +259,7 @@ Rooms
 
         const formData = {
             name: roomName,
-            other_user: { other_user_id: parseInt(otherUserId) }
+            other_user_id: otherUserId
         };
 
         $.ajax({

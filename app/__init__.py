@@ -1,4 +1,4 @@
-from flask import Flask,session
+from flask import Flask, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from .extensions import socketio
@@ -50,22 +50,13 @@ def create_app():
     
     @login_manager.user_loader
     def load_user(user_id):
-        user_type = session.get("user_type")
-        print(f"User type on init file is: {user_type}")
-        if user_type == "Person":
-            return User.query.get(int(user_id))
-        elif user_type == "Company":
-            return Companies.query.get(int(user_id))
-        return None
+        # Now we can simply query the unified User model
+        from .models import User
+        return User.query.get(int(user_id))
 
     
     # Import models to ensure they're known to SQLAlchemy
-    from .models import User 
-    from .models import Companies
-    from .models import DirectMessages 
-    from .models import Jobs 
-    from .models import Notifications
-    from .models import Applications
+    from .models import User, Person, Company, Job, JobApplication, Room, Message
     
     # Create tables
     with app.app_context():
