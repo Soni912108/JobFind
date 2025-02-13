@@ -58,7 +58,7 @@ def new_room():
 def join_room_route(room_id):
     try:
         if not room_id:
-            return redirect(url_for('frontend.rooms'))
+            return jsonify({"error": "Room not found"}), 404
 
         # Get room and check authorization
         room = Room.query.filter(
@@ -71,7 +71,7 @@ def join_room_route(room_id):
 
         if not room:
             flash("Room not found or access denied", "danger")
-            return redirect(url_for('frontend.rooms'))
+            return jsonify({"error": "Room not found"}), 404
 
         # Get other participant's info using the helper method
         other_participant = room.get_other_participant(current_user.id)
@@ -119,6 +119,19 @@ def search_users_for_new_messages(input):
     return jsonify({"error": "No search input provided"})
 
 
+# socket to listen for new messages
+@socketio.on('join')
+def on_join(data):
+    if not current_user.is_authenticated:
+        return False
+    
+    room = data.get('room')
+    if room:
+        join_room(room)
+        print(f"User {current_user.id} joined room {room}")  # Debug log
+        return True
+    return False
+
 
 @socketio.on('new message')
 def new_message(data):
@@ -129,7 +142,9 @@ def new_message(data):
         room_id = data.get('room_id')
         message_text = data.get('message')
 
-        if not room_id or not message_text:
+        print(f"Received message in room {room_id}: {message_text}")  # Debug log
+
+        if not room_id or not message_text or not message_text.strip():
             return False
 
         # Verify room access
@@ -141,40 +156,60 @@ def new_message(data):
             )
         ).first()
 
-        if not room:
-            return False
+        if not room: return False
 
         # Create new message
         message = Message(
             room_id=room_id,
             sender_id=current_user.id,
-            message=message_text
+            message=message_text.strip()
         )
-        db.session.add(message)
-        db.session.commit()
+        
+        try:
+            db.session.add(message)
+            db.session.commit()
+            print(f"Message created successfully: {message.id}")  # Debug log
+        except Exception as db_error:
+            print(f"Database error: {str(db_error)}")
+            db.session.rollback()
+            return False
 
         # Get other participant for notification
         other_participant = room.get_other_participant(current_user.id)
         
-        # Create notification for other participant
-        notif_message = f"New message from {current_user.name}"
-        create_notification(other_participant.id, notif_message, emit_notification=True)
-
-        # Emit message to room
-        emit('new message', {
+        message_data = {
             'sender_id': current_user.id,
             'sender_name': current_user.name,
             'message': message_text,
             'created_at': message.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        }, room=str(room_id))
+        }
+        
+        print(f"Prepared message data: {message_data}")  # Debug log
+
+        try:
+            emit('new message', message_data, room=str(room_id),include_self=False)
+            print(f"Message emitted successfully to room {room_id}")  # Debug log
+        except Exception as emit_error:
+            print(f"Emit error: {str(emit_error)}")
+            return False
+
+        # Create notification for other participant if they're not in the room
+        if str(room_id) not in rooms(other_participant.id):
+            try:
+                notif_message = f"New message from {current_user.name}"
+                create_notification(other_participant.id, notif_message, emit_notification=True)
+                print(f"Notification created for user {other_participant.id}")  # Debug log
+            except Exception as notif_error:
+                print(f"Notification error: {str(notif_error)}")
 
         return True
 
     except Exception as e:
+        import traceback
         print(f"Error handling new message: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")  # Full traceback
         db.session.rollback()
         return False
-
 
 
 

@@ -196,6 +196,7 @@ def rooms():
         pagination=rooms_pagination,
         rooms=rooms_list,
         total_count=rooms_pagination.total,
+        is_room_owner = [current_user.id == room.owner_id for room in rooms_list],
         user=current_user
     )
 

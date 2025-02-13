@@ -182,7 +182,9 @@ Rooms
             <div class="room-item">
                 <div class="room-info">
                     <h5>{{ room.name }}</h5>
-                    <p>Owner Name: {{ room.room_owner_name }}</p>
+                    {% if is_room_owner %}
+                        <p>Room Owner: {{ user.name }}</p>
+                    {% endif %}
                     <p>Created: {{ room.created_at }}</p>
                     <p>Last Updated: {{ room.updated_at }}</p>
                 </div>
