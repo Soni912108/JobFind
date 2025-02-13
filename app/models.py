@@ -157,6 +157,7 @@ class JobApplication(db.Model):
             "resume": self.resume,  
         }
 
+
 class Notifications(db.Model):
     __tablename__ = 'notifications'
 

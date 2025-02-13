@@ -4,44 +4,29 @@
 
 <style>
     .messages-container {
-        height: 60vh;
-        overflow-y: auto;
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        margin-bottom: 20px;
+        padding: 1rem;
     }
     
-    .message {
-        margin-bottom: 15px;
+    .message-bubble {
         max-width: 70%;
+        padding: 0.5rem 1rem;
+        border-radius: 1rem;
+        margin-bottom: 0.5rem;
     }
     
-    .message.sent {
-        margin-left: auto;
+    .message-bubble.sent {
         background-color: #007bff;
         color: white;
-        border-radius: 15px 15px 0 15px;
-        padding: 10px;
+        margin-left: auto;
     }
     
-    .message.received {
-        margin-right: auto;
+    .message-bubble.received {
         background-color: #e9ecef;
-        border-radius: 15px 15px 15px 0;
-        padding: 10px;
+        margin-right: auto;
     }
     
-    .message-timestamp {
-        font-size: 0.8em;
-        color: #666;
-        margin-top: 5px;
-    }
-    
-    .chat-header {
-        padding: 20px 0;
-        border-bottom: 1px solid #ddd;
-        margin-bottom: 20px;
+    .message-content {
+        margin: 0.25rem 0;
     }
 </style>
 {% endblock %}
@@ -56,89 +41,134 @@ Messages
 
 {% block body %}
 
-
-<div class="container">
-    <div class="chat-header">
-        {% if is_room_owner %}
-            <p>Room Owner: {{ user.name }}</p>
-        {% endif %}
-        <h3>{{ room.name }}</h3>
-        <p>Chatting with: {{ other_user_name }}</p>
-    </div>
-
-    <div class="messages-container" id="messagesContainer">
-        {% for message in messages %}
-            <div class="message {% if message.sender_id == user.id %}sent{% else %}received{% endif %}">
-                <div class="message-content">
-                    {{ message.message }}
-                </div>
-                <div class="message-timestamp">
-                    {{ message.created_at }}
-                </div>
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>Chat with {{ other_user_name }}</h5>
+            <span class="badge bg-secondary">{{ other_user_type }}</span>
+        </div>
+        
+        <div class="card-body">
+            <!-- Messages container -->
+            <div id="messages-container" class="messages-container mb-4" style="height: 400px; overflow-y: auto;">
+                {% for message in messages %}
+                    <div class="message-bubble mb-2 {% if message.sender_id == user.id %}sent{% else %}received{% endif %}">
+                        <small class="text-muted">{{ message.sender.name }}</small>
+                        <div class="message-content">
+                            {{ message.message }}
+                        </div>
+                        <small class="text-muted">{{ message.created_at.strftime('%H:%M') }}</small>
+                    </div>
+                {% endfor %}
             </div>
-        {% endfor %}
-    </div>
 
-    <div class="message-input">
-        <form id="messageForm">
-            <input type="hidden" id="roomId" value="{{ room.id }}">
-            <div class="input-group">
-                <input type="text" 
-                       id="messageInput" 
-                       class="form-control" 
-                       placeholder="Type your message...">
-                <button type="submit" class="btn btn-primary">Send</button>
-            </div>
-        </form>
+            <!-- Message input form -->
+            <form id="message-form" class="message-form">
+                <div class="input-group">
+                    <input type="text" id="message-input" class="form-control" placeholder="Type your message...">
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 {% block scripts %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-<script type="text/javascript">
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const socket = io(window.location.origin);
+    const messagesContainer = document.getElementById('messages-container');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    const roomId = "{{ room.id }}";
+    const currentUserId = {{ current_user.id }};
 
-$(document).ready(function() {
-    // Scroll to bottom of messages
-    const messagesContainer = document.getElementById('messagesContainer');
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    // Join the room
+    socket.emit('join', { room: roomId });
 
-    // Handle message submission
-    $('#messageForm').on('submit', function(e) {
+    function createMessageElement(data, isCurrentUser) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message-bubble mb-2 ${isCurrentUser ? 'sent' : 'received'}`;
+        
+        const sanitizeHTML = str => {
+            const temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML;
+        };
+        
+        messageDiv.innerHTML = `
+                <small class="text-muted">${sanitizeHTML(data.sender_name)}</small>
+                <div class="message-content">
+                    ${sanitizeHTML(data.message)}
+                </div>
+                <small class="text-muted">${new Date(data.created_at).toLocaleTimeString()}</small>
+            `;
+
+        
+        return messageDiv;
+    }
+
+    function scrollToBottom() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    scrollToBottom();
+
+    messageForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        const message = $('#messageInput').val().trim();
-        const roomId = $('#roomId').val();
-
-        if (!message) return;
-
-        $.ajax({
-            url: '/messages/send',
-            method: 'POST',
-            data: {
+        const message = messageInput.value.trim();
+        if (message) {
+            console.log('Sending message:', { room_id: roomId, message: message });
+            // Append the message locally immediately:
+            const localMsg = {
+                sender_id: currentUserId,
+                sender_name: '{{ user.name }}',
+                message: message,
+                created_at: new Date().toISOString()
+            };
+            const messageElement = createMessageElement(localMsg, true);
+            messagesContainer.appendChild(messageElement);
+            scrollToBottom();
+            
+            // Emit the message to the server.
+            socket.emit('new message', {
                 room_id: roomId,
                 message: message
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('#messageInput').val('');
-                    // You might want to add the message to the UI here
-                    // or implement WebSocket for real-time updates
-                    location.reload(); // Temporary solution
-                } else {
-                    alert('Error sending message');
-                }
-            },
-            error: function(error) {
-                console.error('Error:', error);
-                alert('Error sending message');
-            }
-        });
+            });
+            
+            messageInput.value = '';
+        }
+    });
+
+    socket.on('connect', () => {
+        console.log('Socket connected successfully');
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Socket disconnected');
+    });
+
+    // Add the new message listener only once (remove duplicates if needed)
+    socket.off('new message');
+    socket.on('new message', function(data) {
+        // If by any chance, the event arrives for the current user, skip it
+        if (data.sender_id === currentUserId) return;
+        console.log('Received new message:', data);
+        const messageElement = createMessageElement(data, false);
+        messagesContainer.appendChild(messageElement);
+        scrollToBottom();
+    });
+
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('Connection error:', error);
     });
 });
-       
+
 </script>
-
-
 {% endblock %}
 <!-- end of the block body -->
 {% endblock %}
