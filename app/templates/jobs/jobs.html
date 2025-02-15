@@ -154,8 +154,7 @@ Jobs for you
                                 {% else %}
                                 <div class="btn-group" data-job-id="{{ job.id }}">
                                     <button type="button" class="btn btn-sm btn-success"
-                                            onclick="applyForJobPosition('{{ job.id }}')"
-                                            >
+                                            onclick="applyForJobPosition('{{ job.id }}', this)">
                                         <i class="fas fa-paper-plane"></i> Apply
                                     </button>
                                     <br>

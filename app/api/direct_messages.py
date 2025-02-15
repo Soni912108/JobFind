@@ -23,6 +23,7 @@ def new_room():
         errors = validate_new_room_data(request.form)
         if errors:
             for error in errors:
+                print(f"error is: {error}")
                 flash(error, "warning")
             return jsonify({"success": False, "message": "Validation errors"})
 
@@ -76,7 +77,7 @@ def join_room_route(room_id):
         # Get other participant's info using the helper method
         other_participant = room.get_other_participant(current_user.id)
         is_room_owner = current_user.id == room.owner_id
-
+        print(f"{current_user.id} is the owner of the room? {is_room_owner}, owner id of the room is: {room.owner_id}")
         # Get messages for this room
         messages = Message.query.filter_by(room_id=room_id)\
                               .order_by(Message.created_at.asc())\
@@ -96,6 +97,16 @@ def join_room_route(room_id):
         print(f"Error joining room: {str(e)}")
         flash("Error accessing room", "danger")
         return redirect(url_for('frontend.rooms'))
+
+
+
+@direct_messages_bp.route("room/delete/<int:room_id>", methods=["GET"])
+@login_required
+def delete_room(room_id):
+    pass
+
+
+
 
 @direct_messages_bp.route("search_users/<string:input>", methods=["GET"])
 @login_required
@@ -174,7 +185,7 @@ def new_message(data):
         # Check if other participant's socket is not in the room
         if str(room_id) not in rooms(other_participant.id):
             notification_message = f"New message from {current_user.name}"
-            create_notification(other_participant.id, notification_message, room_id ,emit_notification=True)
+            create_notification(other_participant.id, notification_message, emit_notification=True)
             print(f"Notification created for user {other_participant.id}")
     except Exception as notif_error:
         print(f"Notification error: {str(notif_error)}")

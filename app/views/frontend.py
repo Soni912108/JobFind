@@ -189,6 +189,8 @@ def rooms():
         error_out=False
     )
     rooms_list = rooms_pagination.items
+    for room in rooms_list:
+        room.is_room_owner = room.owner_id == current_user.id
 
     return render_template(
         "dms/rooms.html",
@@ -196,7 +198,6 @@ def rooms():
         pagination=rooms_pagination,
         rooms=rooms_list,
         total_count=rooms_pagination.total,
-        is_room_owner = [current_user.id == room.owner_id for room in rooms_list],
         user=current_user
     )
 

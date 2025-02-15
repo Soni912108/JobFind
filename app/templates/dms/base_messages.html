@@ -1,6 +1,67 @@
 {% extends 'base.html' %}
 
 {% block modals %}
+<!-- New Room Modal -->
+<div class="modal fade" id="newRoomModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle text-primary me-2"></i>New Chat
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newRoomForm" class="needs-validation" novalidate>
+                    <!-- Room Name Input -->
+                    <div class="mb-3">
+                        <label for="roomName" class="form-label">Room Name</label>
+                        <input type="text" 
+                            class="form-control" 
+                            id="roomName" 
+                            placeholder="Enter room name..."
+                            required>
+                        <div class="invalid-feedback">
+                            Please enter a room name.
+                        </div>
+                    </div>
+                    <!-- Search Users Input -->
+                    <div class="mb-3 position-relative">
+                        <label class="form-label">Search Users</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="userSearch" 
+                               placeholder="Type to search..."
+                               autocomplete="off">
+                        <div id="searchResults" 
+                             class="list-group position-absolute w-100 shadow-sm" 
+                             style="max-height: 200px; overflow-y: auto; z-index: 1000;">
+                        </div>
+                    </div>
+
+                    <!-- Selected User Display -->
+                    <div id="selectedUserDisplay" class="alert alert-info d-flex align-items-center" style="display: none;">
+                        <i class="fas fa-user-check me-2"></i>
+                        <span id="userDisplayName" class="flex-grow-1"></span>
+                        <button type="button" id="removeUser" class="btn-close"></button>
+                    </div>
+
+                    <input type="hidden" id="selectedUserId" name="selected_user_id">
+                    
+                    <div class="d-grid">
+                        <button type="button" 
+                                onclick="createRoom()" 
+                                class="btn btn-primary" 
+                                id="createRoomBtn" 
+                                disabled>
+                            <i class="fas fa-plus me-2"></i>Create Chat
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Confirmation Modal -->
 <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
@@ -37,16 +98,16 @@
 
 {% block pagination %}
 <!-- without the sort and order by args -->
-    {% if total_count > 10 %}
-    <nav aria-label="Messages pagination" class="mt-4">
+    {% if total_count > 6 %}
+    <nav aria-label="Rooms pagination" class="mt-4">
         <ul class="pagination justify-content-start">
             <!-- Previous Button -->
             {% if pagination.has_prev %}
             <li class="page-item">
                 {% if request.args.get('search') %}
-                <a class="page-link" href="{{ url_for('frontend.messages', page=pagination.prev_num, search=request.args.get('search', '')) }}" tabindex="-1">Previous</a>
+                <a class="page-link" href="{{ url_for('frontend.rooms', page=pagination.prev_num, search=request.args.get('search', '')) }}" tabindex="-1">Previous</a>
                 {% else %}
-                <a class="page-link" href="{{ url_for('frontend.messages', page=pagination.prev_num) }}" tabindex="-1">Previous</a>
+                <a class="page-link" href="{{ url_for('frontend.rooms', page=pagination.prev_num) }}" tabindex="-1">Previous</a>
                 {% endif %}
             </li>
             {% else %}
@@ -65,9 +126,9 @@
                     
                     <li class="page-item {% if page_num == pagination.page %} active{% endif %}">
                         {% if request.args.get('search') %}
-                        <a class="page-link" href="{{ url_for('frontend.messages',page=page_num, search=request.args.get('search', '')) }}">{{ page_num }}</a>
+                        <a class="page-link" href="{{ url_for('frontend.rooms',page=page_num, search=request.args.get('search', '')) }}">{{ page_num }}</a>
                         {% else %}
-                        <a class="page-link" href="{{ url_for('frontend.messages',page=page_num)}}">{{ page_num }}</a>
+                        <a class="page-link" href="{{ url_for('frontend.rooms',page=page_num)}}">{{ page_num }}</a>
                         {% endif %}
                     </li>
                 {% elif page_num == pagination.page - window_size - 1 or 
@@ -82,9 +143,9 @@
             {% if pagination.has_next %}
             <li class="page-item">
                 {% if request.args.get('search') %}
-                <a class="page-link" href="{{ url_for('frontend.messages', page=pagination.next_num, search=request.args.get('search', '')) }}">Next</a>
+                <a class="page-link" href="{{ url_for('frontend.rooms', page=pagination.next_num, search=request.args.get('search', '')) }}">Next</a>
                 {% else %}
-                <a class="page-link" href="{{ url_for('frontend.messages', page=pagination.next_num) }}">Next</a>
+                <a class="page-link" href="{{ url_for('frontend.rooms', page=pagination.next_num) }}">Next</a>
                 {% endif %}
             </li>
             {% else %}
@@ -101,7 +162,7 @@
 {% block scripts %}
 
 <script>
-    // Function to show the toast messages(or errors)
+    // Function to show the toast rooms(or errors)
     function showToast(message, isError = false) {
         const toast = document.getElementById('messagesToast');
         const toastTitle = document.getElementById('toastTitle');
@@ -125,7 +186,7 @@
         });
         bsToast.show();
     }
-    // to show the messages with bootstrap
+    // to show the rooms with bootstrap
     function showConfirmation(message) {
         return new Promise((resolve) => {
             const modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
@@ -149,48 +210,6 @@
             modal.show();
         });
     }
-
-    
-    //scripts to handle the search and pagination logic - via URL
-    document.addEventListener('DOMContentLoaded', function () {
-      const searchInput = document.getElementById('usersSearch');
-      const removeFiltersBtn = document.getElementById('removeFilters');
-
-      if (searchInput) {
-          searchInput.addEventListener('keyup', function (event) {
-              if (event.key === 'Enter') {
-                  const searchValue = searchInput.value.trim();
-                  const url = new URL(window.location.href);
-                  if (searchValue) {
-                      url.searchParams.set('search', searchValue);
-                      url.searchParams.set('page', 1); // Reset to the first page on new search
-                  } else {
-                      url.searchParams.delete('search'); // Remove search if empty
-                  }
-                  window.location.replace(url);
-              }
-          });
-
-          searchInput.addEventListener('input', function () {
-              if (removeFiltersBtn) {
-                  removeFiltersBtn.style.display = searchInput.value.trim() ? 'inline-flex' : 'none';
-              }
-          });
-      }
-
-      if (removeFiltersBtn) {
-          removeFiltersBtn.addEventListener('click', function () {
-              const url = new URL(window.location.href);
-              url.searchParams.delete('search'); // Remove the search parameter from the URL
-              window.location.replace(url); // Reload the page with the updated URL
-          });
-
-          // Initialize visibility of the Remove Filters button on page load
-          if (searchInput && removeFiltersBtn) {
-              removeFiltersBtn.style.display = searchInput.value.trim() ? 'inline-flex' : 'none';
-          }
-      }
-  });
 
 </script>
 

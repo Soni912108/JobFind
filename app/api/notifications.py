@@ -4,7 +4,7 @@ from app.models import User, Company, Notifications,JobApplication
 from datetime import datetime
 from flask_login import login_required, current_user
 from app.extensions import socketio
-
+from flask_socketio import join_room,emit
 
 notifications_bp = Blueprint("notifications",__name__)
 
@@ -33,7 +33,40 @@ def delete_notification(notification_id):
 
 
 
-def create_notification(receiver_id, message, room_id,emit_notification=False):
+#socket to handle new notifications
+@socketio.on("join_notifications")
+def handle_join_notifications(data):
+    """Handle user joining their notification room"""
+    if not current_user.is_authenticated:
+        emit('error', {'message': 'User not authenticated'}, room=request.sid)
+    try:
+        # Get user info from data
+        user_id = data.get('user_id')
+        user_type = data.get('user_type')
+        
+        if not user_id:
+            print("Error: No user_id provided in join_notifications")
+            return
+        
+        # Create a unique room name for user's notifications
+        notification_room = f"notifications_{user_id}"
+        
+        # Join the room
+        join_room(notification_room)
+        
+        print(f"User {user_id} ({user_type}) joined notification room: {notification_room}")
+        
+        # Optionally send confirmation
+        return {"status": "success", "message": f"Joined notification room"}
+        
+    except Exception as e:
+        print(f"Error in handle_join_notifications: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+
+
+
+def create_notification(receiver_id, message,emit_notification=False):
     """
     Create a new notification record.
     Optionally, if emit_notification is True, emit a real-time update.
@@ -54,7 +87,13 @@ def create_notification(receiver_id, message, room_id,emit_notification=False):
         print(f"Error creating notification: {e}")
         return None
 
-    # Optionally emit a socket event for real-time notification update.
     if emit_notification:
-        socketio.emit('new_notification', new_notification.__json__(), room=room_id)
+            notification_room = f"notifications_{receiver_id}"
+            socketio.emit('new_notification', 
+                         new_notification.__json__(), 
+                         room=notification_room)
+            print(f"Emitted notification to room: {notification_room}")
+            
     return new_notification
+
+
