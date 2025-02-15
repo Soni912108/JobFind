@@ -390,7 +390,7 @@
     }
 
     //function to send request to server for apply to a job
-    async function  applyForJobPosition(jobId) {
+    async function applyForJobPosition(jobId, btn) {
         const confirmed = await showConfirmation('Are you sure you want to apply for this job?');
         if (!confirmed) return;
         
@@ -410,12 +410,20 @@
         })
         .then(data => {
             showToast(data.message, false);
+            // UPDATE: Disable the button and change its text to "Applied"
+            if (btn) {
+                btn.textContent = "Applied";  // Change button text
+                btn.classList.remove("btn-success");
+                btn.classList.add("btn-secondary");
+                btn.disabled = true; // Disable the button so it can't be clicked again
+            }
         })
         .catch(error => {
             console.error('Error:', error);
             showToast(error.message, true);
         });
     }
+
 
     //scripts to handle the search and pagination logic - via URL
     document.addEventListener('DOMContentLoaded', function () {

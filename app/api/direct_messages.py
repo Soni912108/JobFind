@@ -7,7 +7,7 @@ from app import db
 from app.extensions import socketio
 from app.models import User, Person, Company, Room, Message
 from .notifications import create_notification
-from app.utils.validate_data import is_form_empty, validate_new_room_data
+from app.utils.validate_data import is_form_empty, validate_new_room_data, validate_new_message,create_new_message
 
 direct_messages_bp = Blueprint("direct_messages", __name__)
 
@@ -23,6 +23,7 @@ def new_room():
         errors = validate_new_room_data(request.form)
         if errors:
             for error in errors:
+                print(f"error is: {error}")
                 flash(error, "warning")
             return jsonify({"success": False, "message": "Validation errors"})
 
@@ -76,7 +77,7 @@ def join_room_route(room_id):
         # Get other participant's info using the helper method
         other_participant = room.get_other_participant(current_user.id)
         is_room_owner = current_user.id == room.owner_id
-
+        print(f"{current_user.id} is the owner of the room? {is_room_owner}, owner id of the room is: {room.owner_id}")
         # Get messages for this room
         messages = Message.query.filter_by(room_id=room_id)\
                               .order_by(Message.created_at.asc())\
@@ -96,6 +97,16 @@ def join_room_route(room_id):
         print(f"Error joining room: {str(e)}")
         flash("Error accessing room", "danger")
         return redirect(url_for('frontend.rooms'))
+
+
+
+@direct_messages_bp.route("room/delete/<int:room_id>", methods=["GET"])
+@login_required
+def delete_room(room_id):
+    pass
+
+
+
 
 @direct_messages_bp.route("search_users/<string:input>", methods=["GET"])
 @login_required
@@ -119,7 +130,7 @@ def search_users_for_new_messages(input):
     return jsonify({"error": "No search input provided"})
 
 
-# socket to listen for new messages
+# socket to listen for new room joins
 @socketio.on('join')
 def on_join(data):
     if not current_user.is_authenticated:
@@ -133,83 +144,53 @@ def on_join(data):
     return False
 
 
+# socket to listen for new messages
 @socketio.on('new message')
 def new_message(data):
     if not current_user.is_authenticated:
-        return False
+        emit('error', {'message': 'User not authenticated'}, room=request.sid)
 
+    if is_form_empty(data):
+        flash("Missing data", "warning")
+        return jsonify({"success": False, "message": "Missing data"})
+
+    # Validate inputs and room access
+    errors, room = validate_new_message(data, current_user.id, db=db)
+    if errors:
+        for error in errors:
+            flash(error, "warning")
+        emit('error', {"errors": errors}, room=request.sid)
+
+    # here the checks are all done, storing te id/msg as used many times below
+    room_id = data.get('room_id')
+    message_text = data.get('message')
+    # Create the new message
+    message = create_new_message(room_id, current_user.id, message_text, db=db)
+    # Prepare message data for emission
+    message_data = message.json_version()
+    message_data['sender_name'] = current_user.name
+    print(f"Prepared message data: {message_data}")
+
+    # Emit the message to the room (sender will not receive it)
     try:
-        room_id = data.get('room_id')
-        message_text = data.get('message')
+        emit('new message', message_data, room=str(room_id), include_self=False)
+        print(f"Message emitted successfully to room {room_id}")
+    except Exception as emit_error:
+        print(f"Emit error: {str(emit_error)}")
+        emit('error', {"errors": emit_error}, room=room_id)
 
-        print(f"Received message in room {room_id}: {message_text}")  # Debug log
-
-        if not room_id or not message_text or not message_text.strip():
-            return False
-
-        # Verify room access
-        room = Room.query.filter(
-            Room.id == room_id,
-            db.or_(
-                Room.owner_id == current_user.id,
-                Room.other_user_id == current_user.id
-            )
-        ).first()
-
-        if not room: return False
-
-        # Create new message
-        message = Message(
-            room_id=room_id,
-            sender_id=current_user.id,
-            message=message_text.strip()
-        )
-        
-        try:
-            db.session.add(message)
-            db.session.commit()
-            print(f"Message created successfully: {message.id}")  # Debug log
-        except Exception as db_error:
-            print(f"Database error: {str(db_error)}")
-            db.session.rollback()
-            return False
-
-        # Get other participant for notification
+    # Create notification for the other participant
+    try:
         other_participant = room.get_other_participant(current_user.id)
-        
-        message_data = {
-            'sender_id': current_user.id,
-            'sender_name': current_user.name,
-            'message': message_text,
-            'created_at': message.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        }
-        
-        print(f"Prepared message data: {message_data}")  # Debug log
-
-        try:
-            emit('new message', message_data, room=str(room_id),include_self=False)
-            print(f"Message emitted successfully to room {room_id}")  # Debug log
-        except Exception as emit_error:
-            print(f"Emit error: {str(emit_error)}")
-            return False
-
-        # Create notification for other participant if they're not in the room
+        # Check if other participant's socket is not in the room
         if str(room_id) not in rooms(other_participant.id):
-            try:
-                notif_message = f"New message from {current_user.name}"
-                create_notification(other_participant.id, notif_message, emit_notification=True)
-                print(f"Notification created for user {other_participant.id}")  # Debug log
-            except Exception as notif_error:
-                print(f"Notification error: {str(notif_error)}")
-
-        return True
-
-    except Exception as e:
-        import traceback
-        print(f"Error handling new message: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")  # Full traceback
-        db.session.rollback()
-        return False
+            notification_message = f"New message from {current_user.name}"
+            create_notification(other_participant.id, notification_message, emit_notification=True)
+            print(f"Notification created for user {other_participant.id}")
+    except Exception as notif_error:
+        print(f"Notification error: {str(notif_error)}")
+    
+    return True
 
 
 

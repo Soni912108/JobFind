@@ -2,115 +2,50 @@
 
 {% block head %}
 <style>
-.rooms-container {
-    padding: 20px;
-}
+    /* search rooms */
+    .search-wrapper {
+        background: #f8f9fa;
+        border-bottom: 1px solid rgba(0,0,0,.1);
+    }
 
-.rooms-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-}
+    .search-container .input-group {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,.05);
+    }
 
-.room-card {
-    border: 1px solid #ddd;
-    padding: 15px;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-}
+    .search-container .form-control:focus {
+        box-shadow: none;
+        border-color: #ced4da;
+    }
 
-.create-room {
-    max-width: 400px;
-    margin: 0 auto;
-}
+    .search-container .input-group-text,
+    .search-container .form-control,
+    .search-container .btn-link {
+        border-color: #ced4da;
+    }
 
-.search-container {
-    position: relative;
-}
+    .search-container .btn-link:hover {
+        color: var(--bs-danger) !important;
+        background: rgba(0,0,0,.05);
+    }
 
-.search-results {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-top: none;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 1000;
-}
+    .rooms-sidebar {
+            height: calc(100vh - 56px);
+            transition: all 0.3s ease;
+        }
 
-.selected-user {
-    margin: 10px 0;
-    padding: 8px;
-    background: #f0f0f0;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+    @media (max-width: 768px) {
+        .rooms-sidebar {
+            width: 100%;
+        }
+    }
 
-#removeUser {
-    background: none;
-    border: none;
-    color: #ff4444;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 0 5px;
-}
+    .room-item {
+        transition: transform 0.2s ease;
+    }
 
-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-input, button {
-    padding: 8px;
-    margin: 5px 0;
-}
-
-button[type="submit"] {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-button[type="submit"]:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-}
-
-button[type="submit"]:not(:disabled):hover {
-    background-color: #0056b3;
-}
-
-.rooms-container {
-    margin: 20px 0;
-}
-
-.room-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #fff;
-}
-
-.room-info {
-    flex-grow: 1;
-}
-
-.join-room-btn {
-    margin-left: 15px;
-}
 </style>
 {% endblock %}
 
@@ -121,88 +56,99 @@ Rooms
 
 
 {% block body %}
-
-
-<div class="container mt-4">
-    <!-- Header Section -->
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="d-flex align-items-center">
-                <i class="fas fa-envelope me-3 text-primary"></i>
-                <span class="fw-bold">Rooms</span>
-            </h2>
-            <button class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#newRoomModal">
-                <i class="fas fa-plus me-2"></i>
-                New Room
+<div class="container-fluid p-0">
+    <div class="search-wrapper px-3 pt-3">
+        <div class="search-container position-relative">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-end-0">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                <input type="search" 
+                       class="form-control border-start-0 ps-0 shadow-none"
+                       id="roomSearch" 
+                       placeholder="Search conversations..." 
+                       value="{{ request.args.get('search', '') }}"
+                       autocomplete="off"
+                       aria-label="Search rooms">
+                {% if request.args.get('search') %}
+                    <button id="removeFilters" 
+                            class="btn btn-link text-muted border-0"
+                            title="Clear search">
+                        <i class="fas fa-times"></i>
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <!-- Rooms List Container -->
+    <div class="rooms-sidebar bg-white border-end">
+        <!-- Header with New Room Button -->
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light sticky-top">
+            <h5 class="mb-0 fw-semibold">
+                <i class="fas fa-comments text-primary me-2"></i>Chats
+            </h5>
+            <button class="btn btn-primary btn-sm rounded-circle" data-bs-toggle="modal" data-bs-target="#newRoomModal">
+                <i class="fas fa-plus"></i>
             </button>
         </div>
-    </div>
-
-    <!-- Search/New Room Modal -->
-    <div class="modal fade" id="newRoomModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">New Room</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Form to create new room -->
-                    <form id="newRoomForm">
-                        <div class="mb-3">
-                            <input type="text" class="form-control" id="roomName" name="name" placeholder="Room Name" required>
+        {% if rooms %}
+            <!-- Rooms List -->
+            <div class="overflow-auto" style="height: calc(100% - 60px);">
+                {% for room in rooms %}
+                <div class="room-item p-3 border-bottom {% if room.is_active %}cursor-pointer hover-bg-light{% endif %}" 
+                        {% if room.is_active %}onclick="joinRoom('{{ room.id }}')"{% endif %}>
+                        <div class="d-flex align-items-center">
+                            <!-- Room Avatar -->
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                                <i class="fas fa-user text-primary"></i>
+                            </div>
+                            
+                            <!-- Room Info -->
+                            <div class="flex-grow-1 min-width-0">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="mb-0 text-truncate fw-semibold text-dark">{{ room.name }}</h6>
+                                    <small class="text-muted ms-2">{{ room.updated_at.strftime('%H:%M') }}</small>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <p class="mb-0 text-muted text-truncate small">
+                                        {% if room.is_room_owner %}
+                                            <i class="fas fa-crown text-warning me-1"></i>Room Owner
+                                        {% else %}
+                                            <span class="text-muted">Click to view messages</span>
+                                        {% endif %}
+                                    </p>
+                                    {% if room.is_active %}
+                                        <span class="badge rounded-pill bg-success">Active</span>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                        
-                        <!-- Search input field -->
-                        <div class="search-container mb-3">
-                            <input type="text" class="form-control" id="userSearch" placeholder="Search for user..." autocomplete="off">
-                            <div id="searchResults" class="search-results"></div>
-                        </div>
-
-                        <!-- Hidden input to store selected user ID -->
-                        <input type="hidden" id="selectedUserId" name="selected_user_id">
-                        
-                        <div id="selectedUserDisplay" class="selected-user" style="display: none;">
-                            Selected User: <span id="userDisplayName"></span>
-                            <button type="button" id="removeUser">&times;</button>
-                        </div>
-
-                        <button type="button" onclick="createRoom()" class="btn btn-primary" id="createRoomBtn" disabled>Create Room</button>
-                    </form>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            <!-- Pagination - Outside of main div -->
+            <div class="row mt-4">
+                <div class="col">
+                    {% block pagination %}
+                        {{ super() }}
+                    {% endblock pagination %}
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Display available rooms -->
-    <div class="rooms-container">
-        <h2>Available Rooms</h2>
-        <div class="rooms-list">
-            {% for room in rooms %}
-            <div class="room-item">
-                <div class="room-info">
-                    <h5>{{ room.name }}</h5>
-                    {% if is_room_owner %}
-                        <p>Room Owner: {{ user.name }}</p>
-                    {% endif %}
-                    <p>Created: {{ room.created_at }}</p>
-                    <p>Last Updated: {{ room.updated_at }}</p>
-                </div>
-                <button class="btn btn-primary join-room-btn" onclick="joinRoom('{{ room.id }}')">
-                    Join Room
-                </button>
+        {% else %}
+            <div class="alert alert-info text-center">
+                No rooms found.
             </div>
-            {% endfor %}
-        </div>
+        {% endif %}
     </div>
-
 </div>
 
 
 
 
+
 {% block scripts %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     // User search functionality
     $('#userSearch').on('input', function() {
@@ -258,6 +204,10 @@ Rooms
             alert('Please select a user first');
             return;
         }
+        if (!roomName) {
+            alert('Please enter a name for this room');
+            return;
+        }
 
         const formData = {
             name: roomName,
@@ -290,6 +240,49 @@ Rooms
         document.body.appendChild(form);
         form.submit();
     }
+
+
+    //scripts to handle the search and pagination logic - via URL
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('roomSearch');
+        const removeFiltersBtn = document.getElementById('removeFilters');
+
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function (event) {
+                if (event.key === 'Enter') {
+                    const searchValue = searchInput.value.trim();
+                    const url = new URL(window.location.href);
+                    if (searchValue) {
+                        url.searchParams.set('search', searchValue);
+                        url.searchParams.set('page', 1); // Reset to the first page on new search
+                    } else {
+                        url.searchParams.delete('search'); // Remove search if empty
+                    }
+                    window.location.replace(url);
+                }
+            });
+
+            searchInput.addEventListener('input', function () {
+                if (removeFiltersBtn) {
+                    removeFiltersBtn.style.display = searchInput.value.trim() ? 'inline-flex' : 'none';
+                }
+            });
+        }
+
+        if (removeFiltersBtn) {
+            removeFiltersBtn.addEventListener('click', function () {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('search'); // Remove the search parameter from the URL
+                window.location.replace(url); // Reload the page with the updated URL
+            });
+
+            // Initialize visibility of the Remove Filters button on page load
+            if (searchInput && removeFiltersBtn) {
+                removeFiltersBtn.style.display = searchInput.value.trim() ? 'inline-flex' : 'none';
+            }
+        }
+    });
+
 </script>
 {% endblock %}
 

@@ -184,8 +184,8 @@ def apply_job(job_id):
         db.session.commit()
 
         # Create a notification for the company receiving the application
-        notif_message = f"{current_user.name} applied for your job '{job.title}'"
-        create_notification(job.company_id, notif_message, emit_notification=True)
+        notification_message = f"{current_user.name} applied for your job '{job.title}'"
+        create_notification(job.company_id, notification_message, emit_notification=True)
 
         return jsonify({"message": "Application submitted successfully"}), 200
     except Exception as e:

@@ -135,13 +135,13 @@ def applications_page():
 def notifications():
     requested_page = request.args.get('page', 1, type=int)
     page = max(1, requested_page)
-    per_page = 12
+    per_page = 6
 
     search_for = request.args.get('search', '').strip()
     if search_for:
-        base_query = Notifications.query.filter(Notifications.title.ilike(f"%{search_for}%"))
+        base_query = Notifications.query.filter(Notifications.title.ilike(f"%{search_for}%"),Notifications.receiver_id == current_user.id)
     else:
-        base_query = Notifications.query
+        base_query = Notifications.query.filter(Notifications.receiver_id == current_user.id)
 
     # Get paginated jobs
     notifications_pagination = base_query.order_by(Notifications.created_at.desc()).paginate(
@@ -149,13 +149,13 @@ def notifications():
         per_page=per_page,
         error_out=False
     )
-    msg_list = notifications_pagination.items
+    notifications_list = notifications_pagination.items
 
     return render_template(
         "notifications/notifications.html",
         active="notifications", 
         pagination=notifications_pagination,
-        notifications=msg_list,
+        notifications=notifications_list,
         total_count=notifications_pagination.total,
         user=current_user
     )
@@ -166,7 +166,7 @@ def notifications():
 def rooms():
     requested_page = request.args.get('page', 1, type=int)
     page = max(1, requested_page)
-    per_page = 12
+    per_page = 6
 
     search_for = request.args.get('search', '').strip()
     
@@ -189,6 +189,8 @@ def rooms():
         error_out=False
     )
     rooms_list = rooms_pagination.items
+    for room in rooms_list:
+        room.is_room_owner = room.owner_id == current_user.id
 
     return render_template(
         "dms/rooms.html",
@@ -196,7 +198,6 @@ def rooms():
         pagination=rooms_pagination,
         rooms=rooms_list,
         total_count=rooms_pagination.total,
-        is_room_owner = [current_user.id == room.owner_id for room in rooms_list],
         user=current_user
     )
 

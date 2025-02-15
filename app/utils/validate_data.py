@@ -1,7 +1,7 @@
 import re
 import functools
 
-from app.models import User, Person, Company
+from app.models import User, Company,Room,Message
 
 
 def validate_register_user_data(req_data) -> list:
@@ -180,3 +180,57 @@ def validate_job_update_data(req_data) -> list:
         
     return errors
         
+
+
+def validate_new_message(req_data, current_user_id: int, db=None):
+    """
+    Validate new message data and verify room access.
+    Returns a tuple: (errors, room)
+    """
+    errors = []
+    room_id = req_data.get('room_id')
+    message_text = req_data.get("message")
+
+    if not room_id:
+        errors.append("Room id is required.")
+    elif not str(room_id).isdigit():
+        errors.append("Room id was invalid.")
+    
+    if not message_text:
+        errors.append("Message key is required.")
+    elif not message_text.strip():
+        errors.append("No message text. Please type something.")
+
+    # Verify room access.
+    room = Room.query.filter(
+        Room.id == room_id,
+        db.or_(
+            Room.owner_id == current_user_id,
+            Room.other_user_id == current_user_id
+        )
+    ).first()
+    if not room:
+        errors.append("Access denied.")
+
+    return errors, room
+
+
+def create_new_message(room_id, sender_id, message_text,db=None):
+    """
+    Create a new message record in the database.
+    """
+    try:
+        message = Message(
+            room_id=room_id,
+            sender_id=sender_id,
+            message=message_text.strip()
+        )
+        db.session.add(message)
+        db.session.commit()
+        print(f"create_new_message -> Message created successfully: {message.id}")
+        return message
+    
+    except Exception as db_error:
+        print(f"create_new_message -> Database error: {str(db_error)}")
+        db.session.rollback()
+        raise
