@@ -117,6 +117,14 @@ class Message(db.Model):
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
+    
+    def json_version(self):
+        return{
+            'room_id': self.room_id,
+            'sender_id': self.sender_id,
+            'message': self.message,
+            'created_at': self.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
 
 class Job(db.Model):
     """Job posting by a company"""
@@ -153,7 +161,7 @@ class JobApplication(db.Model):
     def __json__(self):
         return {
             "id": self.id,
-            "applied_at": self.applied_at,
+            "applied_at": self.applied_at.strftime("%Y-%m-%d %H:%M:%S"),
             "resume": self.resume,  
         }
 
@@ -174,8 +182,8 @@ class Notifications(db.Model):
             "receiver_id": self.receiver_id,
             "message": self.message,
             "read": self.read,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
             
         }
 

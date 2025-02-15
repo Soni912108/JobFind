@@ -74,7 +74,6 @@ Messages
 </div>
 
 {% block scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const socket = io(window.location.origin);
@@ -104,8 +103,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <small class="text-muted">${new Date(data.created_at).toLocaleTimeString()}</small>
             `;
-
-        
         return messageDiv;
     }
 
@@ -141,11 +138,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     socket.on('connect', () => {
-        console.log('Socket connected successfully');
+        console.log('Socket connected successfully on messages page');
     });
 
     socket.on('disconnect', () => {
-        console.log('Socket disconnected');
+        console.log('Socket disconnected on messages page');
     });
 
     // Add the new message listener only once (remove duplicates if needed)
@@ -159,12 +156,16 @@ document.addEventListener('DOMContentLoaded', function() {
         scrollToBottom();
     });
 
+    socket.on('new_notification', function(data) {
+        console.log('Received new notification:', data);
+    });
+    
     socket.on('error', (error) => {
-        console.error('Socket error:', error);
+        console.error('Socket error on messages page:', error);
     });
 
     socket.on('connect_error', (error) => {
-        console.error('Connection error:', error);
+        console.error('Connection error on messages page:', error);
     });
 });
 
