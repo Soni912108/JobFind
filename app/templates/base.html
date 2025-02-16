@@ -81,64 +81,69 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
-        var socket = io(window.location.origin);
-        //to update the nr of notification
-        function updateNotificationCounter() {
-            const counter = document.getElementById('notification-counter');
-            if (counter) {
-                if (unreadCount > 0) {
-                    counter.style.display = 'inline';
-                    counter.textContent = unreadCount;
-                } else {
-                    counter.style.display = 'none';
+        // Check if we're not on the messages page
+        if (!window.location.pathname.includes('/messages/room/join/')) {
+            var socket = io(window.location.origin);
+            
+            function updateNotificationCounter() {
+                const counter = document.getElementById('notification-counter');
+                if (counter) {
+                    if (unreadCount > 0) {
+                        counter.style.display = 'inline';
+                        counter.textContent = unreadCount;
+                    } else {
+                        counter.style.display = 'none';
+                    }
                 }
             }
-        }
-        // Initialize notification count from localStorage
-        let unreadCount = parseInt(localStorage.getItem('unreadNotifications') || '0');
-
-        // Update counter on page load
-        updateNotificationCounter();
-
-        socket.on('connect', () => {
-        console.log('Socket connected successfully on base page');
-            // Join notifications room when connected
-            socket.emit('join_notifications', {
-                user_id: "{{ current_user.id }}",
-                user_type: '{{ session.get("user_type") }}'
-            });
-        });
-
-        // Handle notifications
-        socket.on('new_notification', function(data) {
-            console.log('Received new notification:', data);
-            unreadCount++;
-            localStorage.setItem('unreadNotifications', unreadCount);
+    
+            // Initialize notification count from localStorage
+            let unreadCount = parseInt(localStorage.getItem('unreadNotifications') || '0');
+    
+            // Update counter on page load
             updateNotificationCounter();
-            // Show toast notification
-            showToast(data.message || 'New notification received');
-        });
-
-        // Reset counter when clicking notifications link
-        const notificationLink = document.querySelector('a[href*="notifications"]');
-        if (notificationLink) {
-        notificationLink.addEventListener('click', function() {
-                unreadCount = 0;
-                localStorage.setItem('unreadNotifications', '0');
-                updateNotificationCounter();
+    
+            socket.on('connect', () => {
+                console.log('Socket connected successfully on base page');
+                // Join notifications room when connected
+                socket.emit('join_notifications', {
+                    user_id: "{{ current_user.id }}",
+                    user_type: '{{ session.get("user_type") }}'
+                });
             });
+    
+            // Handle notifications
+            socket.on('new_notification', function(data) {
+                console.log('Received new notification:', data);
+                unreadCount++;
+                localStorage.setItem('unreadNotifications', unreadCount);
+                updateNotificationCounter();
+                // Show toast notification
+                showToast(data.message || 'New notification received');
+            });
+            //TO DO: listen for new job applications(Company user type socket)
+            //...
+
+            // Reset counter when clicking notifications link
+            const notificationLink = document.querySelector('a[href*="notifications"]');
+            if (notificationLink) {
+                notificationLink.addEventListener('click', function() {
+                    unreadCount = 0;
+                    localStorage.setItem('unreadNotifications', '0');
+                    updateNotificationCounter();
+                });
+            }
+    
+            socket.on('disconnect', () => {
+                console.log('Socket disconnected on base page');
+            });
+    
+            socket.on('error', (error) => {
+                console.error('Socket error on base page:', error);
+            });
+        } else {
+            console.log('On messages page - skipping notification socket initialization');
         }
-
-        //TO DO: listen for new job applications(Company user type socket)
-        
-
-        socket.on('disconnect', () => {
-            console.log('Socket disconnected on base page');
-        });
-
-        socket.on('error', (error) => {
-            console.error('Socket error on base page:', error);
-        });
     </script>
     {% block scripts %}{% endblock %}
 </body>

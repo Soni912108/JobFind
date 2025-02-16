@@ -34,7 +34,7 @@
                                placeholder="Type to search..."
                                autocomplete="off">
                         <div id="searchResults" 
-                             class="list-group position-absolute w-100 shadow-sm" 
+                             class="Room-group position-absolute w-100 shadow-sm" 
                              style="max-height: 200px; overflow-y: auto; z-index: 1000;">
                         </div>
                     </div>
@@ -56,6 +56,59 @@
                                 disabled>
                             <i class="fas fa-plus me-2"></i>Create Chat
                         </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Delete Room Modal -->
+<div class="modal fade" id="deleteRoomModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Room</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete room "<strong id="deleteRoomName"></strong>"?</p>
+                <form id="deleteRoomForm" action="{{ url_for('direct_messages.delete_room') }}" method="POST">
+                    <input type="hidden" id="deleteRoomId" name="room-id">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="deleteRoomForm" class="btn btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Room Modal -->
+<div class="modal fade" id="renameRoomModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rename Room</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="renameRoomForm" action="{{ url_for('direct_messages.rename_room') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="room_name" class="form-label">New Room Name</label>
+                        <input type="hidden" id="renameRoomId" name="room-id">
+                        <input type="text" 
+                               class="form-control" 
+                               id="room_name" 
+                               name="name" 
+                               placeholder="Enter new room name" 
+                               required>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Rename</button>
                     </div>
                 </form>
             </div>
