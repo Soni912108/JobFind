@@ -43,6 +43,14 @@
                             <i class="fas fa-envelope me-1"></i>Messages
                         </a>
                     </li>
+
+                    <li class="nav-item">
+                        <a href="{{ url_for('frontend.profile') }}" 
+                           class="nav-link {% if active=='profile' %}navbar-active{% endif %}">
+                            <i class="fas fa-envelope me-1"></i>Profile
+                        </a>
+                    </li>
+
                     {% if session.get('user_type') == 'Person' %}
                     <li class="nav-item">
                         <a href="{{ url_for('frontend.applications_page') }}" 

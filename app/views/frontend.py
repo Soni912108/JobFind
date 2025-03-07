@@ -129,6 +129,13 @@ def applications_page():
     )
 
 
+# Profile
+@frontend_bp.route("/profile")
+@login_required
+def profile():
+    return render_template("profile/profile.html", active="profile",user=current_user)
+
+
 # Notifications
 @frontend_bp.route("/notifications")
 @login_required

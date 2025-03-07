@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block modals %}
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmationModalLabel">Confirm Action</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="confirmationMessage">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmButton">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Add Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto" id="toastTitle"></strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+
+
+
+{% block scripts %}
+<script>
+    // Function to show the toast notifications(or errors)
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        const toastTitle = document.getElementById('toastTitle');
+        const toastMessage = document.getElementById('toastMessage');
+        
+        // Set toast classes and content
+        toast.classList.remove('bg-success', 'bg-danger', 'text-white');
+        if (isError) {
+            toast.classList.add('bg-danger', 'text-white');
+            toastTitle.textContent = 'Error';
+        } else {
+            toast.classList.add('bg-success', 'text-white');
+            toastTitle.textContent = 'Success';
+        }
+        
+        toastMessage.textContent = message;
+        
+        // Show toast
+        const bsToast = new bootstrap.Toast(toast, {
+            delay: 3000
+        });
+        bsToast.show();
+    }
+    // to show the notifications with bootstrap
+    function showConfirmation(message) {
+        return new Promise((resolve) => {
+            const modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            const confirmButton = document.getElementById('confirmButton');
+            document.getElementById('confirmationMessage').textContent = message;
+            
+            const handleConfirm = () => {
+                modal.hide();
+                confirmButton.removeEventListener('click', handleConfirm);
+                resolve(true);
+            };
+            
+            const handleDismiss = () => {
+                confirmButton.removeEventListener('click', handleConfirm);
+                resolve(false);
+            };
+            
+            confirmButton.addEventListener('click', handleConfirm);
+            modal._element.addEventListener('hidden.bs.modal', handleDismiss);
+            
+            modal.show();
+        });
+    }
+</script>
+
+{% endblock %}

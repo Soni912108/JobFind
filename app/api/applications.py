@@ -1,9 +1,8 @@
-from flask import Blueprint, request, render_template, flash, redirect, url_for, jsonify, session
+from flask import Blueprint, request, flash, redirect, url_for, jsonify
 from app import db
-from app.models import User, Person, Company, Job, JobApplication
+from app.models import Person, Company, Job, JobApplication
 from datetime import datetime
 from flask_login import login_required, current_user
-from app.utils.validate_data import is_form_empty
 
 applications_bp = Blueprint("applications", __name__)
 

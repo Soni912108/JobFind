@@ -1,13 +1,13 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for, jsonify
-from flask_socketio import send, emit, join_room, rooms
+from flask_socketio import emit, join_room, rooms
 from flask_login import login_required, current_user
-from datetime import datetime
 # local
 from app import db
 from app.extensions import socketio
-from app.models import User, Person, Company, Room, Message
+from app.models import User, Room, Message
 from .notifications import create_notification
-from app.utils.validate_data import is_form_empty, validate_new_room_data, validate_new_message,create_new_message
+from app.utils.validate_data import (is_form_empty, validate_new_room_data, 
+                                     validate_new_message,create_new_message)
 
 direct_messages_bp = Blueprint("direct_messages", __name__)
 
@@ -238,7 +238,7 @@ def new_message(data):
         other_participant = room.get_other_participant(current_user.id)
         # Check if other participant's socket is not in the room
         if str(room_id) not in rooms(other_participant.id):
-            notification_message = f"New message from {current_user.name}"
+            notification_message = f"New message from {current_user.name} on room {room_id}"
             create_notification(other_participant.id, notification_message, emit_notification=True)
             print(f"Notification created for user {other_participant.id}")
     except Exception as notif_error:
