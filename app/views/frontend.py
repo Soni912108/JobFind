@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, jsonify, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask import session
 from flask_login import login_user, login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -6,7 +6,6 @@ from app.models import User, Person, Company, Job, JobApplication, Room, Notific
 from app import db
 from app.utils.validate_data import (validate_register_data, validate_login_data, is_form_empty,
                                    validate_register_company_data, validate_register_user_data)
-from sqlalchemy import or_
 from datetime import datetime
 
 
