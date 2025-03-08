@@ -5,3 +5,5 @@ from datetime import datetime
 from flask_login import login_required, current_user
 
 profiles_bp = Blueprint("profiles", __name__)
+
+# here will add rest api to edit profile
