@@ -89,7 +89,7 @@ class Room(db.Model):
     __tablename__ = 'rooms'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(100))
+    name = db.Column(db.String(100), unique=True, nullable=False)
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     other_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
@@ -138,6 +138,7 @@ class Job(db.Model):
     salary = db.Column(db.String(100))
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    is_active = db.Column(db.Boolean, default=True)
 
     # Relationship to applications
     applications = db.relationship('JobApplication', backref='job', lazy=True, cascade="all, delete-orphan")
@@ -152,7 +153,8 @@ class JobApplication(db.Model):
     applicant_id = db.Column(db.Integer, db.ForeignKey('persons.id'), nullable=False)
     resume = db.Column(LONGTEXT)
     applied_at = db.Column(DateTime, default=datetime.now)
-
+    status = db.Column(db.String(100), default="pending")
+    
     @property
     def calculate_days_applied(self):
         days = date(self.applied_at) - date.today()

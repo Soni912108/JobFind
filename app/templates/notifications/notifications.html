@@ -34,7 +34,19 @@ Notifications
           <div class="card notification-card">
             <div class="card-body">
               <div>
-                <p class="notification-message mb-0">{{ notification.message }}</p>
+                <p class="notification-message mb-0">
+                  {% if 'room' in notification.message %}
+                      {% set room_id = notification.message.split('room ')[-1] %}
+                      {{ notification.message }}
+                      <button class="btn btn-link btn-sm p-0 ms-2" 
+                              onclick="joinRoom('{{ room_id }}')"
+                              title="Join Room">
+                          <i class="fas fa-arrow-right"></i> Join Room
+                      </button>
+                  {% else %}
+                      {{ notification.message }}
+                  {% endif %}
+              </p>
                 <small class="notification-timestamp">{{ notification.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
               </div>
               <div>
@@ -136,6 +148,14 @@ Notifications
         console.error('Error:', error);
         showToast(error.message, true);
     });
+}
+  function joinRoom(roomId) {
+    // Simple form submission to handle the POST request
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/messages/room/join/${roomId}`;
+    document.body.appendChild(form);
+    form.submit();
 }
 
 </script>

@@ -1,8 +1,8 @@
-from flask import Blueprint, request, flash, redirect, url_for, jsonify, session
+from flask import Blueprint, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 # local
 from app import db
-from app.models import User, Company, Person, Job, JobApplication
+from app.models import  Company, Person, Job, JobApplication
 from datetime import datetime
 from .notifications import create_notification
 from app.utils.validate_data import is_form_empty,validate_job_data,validate_job_update_data
@@ -184,7 +184,7 @@ def apply_job(job_id):
         db.session.commit()
 
         # Create a notification for the company receiving the application
-        notification_message = f"{current_user.name} applied for your job '{job.title}'"
+        notification_message = f"{current_user.name} {current_user.surname} applied for your job '{job.title}'"
         create_notification(job.company_id, notification_message, emit_notification=True)
 
         return jsonify({"message": "Application submitted successfully"}), 200
