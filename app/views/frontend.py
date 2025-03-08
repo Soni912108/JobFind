@@ -7,6 +7,8 @@ from app import db
 from app.utils.validate_data import (validate_register_data, validate_login_data, is_form_empty,
                                    validate_register_company_data, validate_register_user_data)
 from sqlalchemy import or_
+from datetime import datetime
+
 
 frontend_bp = Blueprint("frontend", __name__)
 
@@ -133,7 +135,89 @@ def applications_page():
 @frontend_bp.route("/profile")
 @login_required
 def profile():
-    return render_template("profile/profile.html", active="profile",user=current_user)
+    user_data = {
+        # Base user info
+        'id': current_user.id,
+        'email': current_user.email,
+        'name': current_user.name,
+        'user_type': current_user.user_type,
+        'location': current_user.location,
+        'created_at': current_user.created_at,
+        'last_login': current_user.last_login,
+        
+        # Chat statistics
+        'total_rooms': len(current_user.rooms_owned) + len(current_user.rooms_joined),
+        'rooms_owned': len(current_user.rooms_owned),
+        'rooms_joined': len(current_user.rooms_joined),
+        'total_messages': len(current_user.messages),
+    }
+
+    # Add type-specific data
+    if isinstance(current_user, Person):
+        # Person-specific data
+        user_data.update({
+            'surname': current_user.surname,
+            'profession': current_user.profession,
+            'skills': current_user.skills or [],
+            'experience': current_user.experience or [],
+            'current_company_info': current_user.current_company_info or {},
+            
+            # Application statistics
+            'total_applications': JobApplication.query.filter_by(
+                applicant_id=current_user.id
+            ).count(),
+            'pending_applications': JobApplication.query.filter_by(
+                applicant_id=current_user.id,
+                status='pending'
+            ).count(),
+            'accepted_applications': JobApplication.query.filter_by(
+                applicant_id=current_user.id,
+                status='accepted'
+            ).count(),
+            
+            # Recent activity
+            'recent_applications': JobApplication.query.filter_by(
+                applicant_id=current_user.id
+            ).order_by(JobApplication.applied_at.desc()).limit(5).all(),
+        })
+        
+    elif isinstance(current_user, Company):
+        # Company-specific data
+        user_data.update({
+            'description': current_user.description,
+            
+            # Job statistics
+            'total_jobs': Job.query.filter_by(company_id=current_user.id).count(),
+            'active_jobs': Job.query.filter_by(
+                company_id=current_user.id,
+                is_active=True
+            ).count(),
+            'total_applicants': JobApplication.query.join(Job).filter(
+                Job.company_id == current_user.id
+            ).count(),
+            
+            # Recent activity
+            'recent_jobs': Job.query.filter_by(
+                company_id=current_user.id
+            ).order_by(Job.created_at.desc()).limit(5).all(),
+
+            'recent_applications': JobApplication.query.join(Job).filter(
+                Job.company_id == current_user.id
+            ).order_by(JobApplication.applied_at.desc()).limit(5).all(),
+        })
+    
+    print(f"User is Company: {isinstance(current_user, Company)}")
+    print(f"User is Person: {isinstance(current_user, Person)}")
+    print(f"User data: {user_data}")
+
+    return render_template(
+        "profile/profile.html",
+        active="profile",
+        user=current_user,
+        user_data=user_data,
+        is_person=isinstance(current_user, Person),
+        is_company=isinstance(current_user, Company)
+    )
 
 
 # Notifications
@@ -244,6 +328,10 @@ def login_post():
     # Check password
     if check_password_hash(user.password, req_data.get("password")):
         login_user(user, remember=req_data.get("remember", False))
+        # Update the last_login variable
+        user.last_login = datetime.now()
+        db.session.merge(user)
+        db.session.commit()
         # Store user type in the session
         session["user_type"] = user_type
         flash("Login successful!", "success")

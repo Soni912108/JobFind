@@ -2,27 +2,254 @@
 
 {% block head %}
 <style>
-
+    .profile-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+    }
+    .stat-card {
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
 </style>
 {% endblock %}
 
-{% block title %}
-Notifications
-{% endblock %}
-
 {% block body %}
+<div class="container py-5">
+    <!-- Profile Header -->
+    <div class="profile-header p-4 mb-4 shadow-sm">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                    <i class="fas {% if is_person %}fa-user{% else %}fa-building{% endif %} fa-2x text-primary"></i>
+                </div>
+            </div>
+            <div class="col">
+                <h2 class="mb-1">{{ user_data.name }}</h2>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-map-marker-alt me-2"></i>{{ user_data.location or 'No location set' }}
+                </p>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                    <i class="fas fa-edit me-2"></i>Edit Profile
+                </button>
+            </div>
+        </div>
+    </div>
 
-<div>
-    <div>
-        <h3>
-            Your Profile info here
-        </h3>
-        <p>More data here as well</p>
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Common Stats -->
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Messages</h6>
+                    <h3 class="card-title mb-0">{{ user_data.total_messages }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Chat Rooms</h6>
+                    <h3 class="card-title mb-0">{{ user_data.total_rooms }}</h3>
+                </div>
+            </div>
+        </div>
+        
+        {% if is_person %}
+        <!-- Person-specific Stats -->
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Applications</h6>
+                    <h3 class="card-title mb-0">{{ user_data.total_applications }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Pending</h6>
+                    <h3 class="card-title mb-0">{{ user_data.pending_applications }}</h3>
+                </div>
+            </div>
+        </div>
+        {% elif is_company %}
+        <!-- Company-specific Stats -->
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Active Jobs</h6>
+                    <h3 class="card-title mb-0">{{ user_data.active_jobs }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Applicants</h6>
+                    <h3 class="card-title mb-0">{{ user_data.total_applicants }}</h3>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-4">
+            <!-- Profile Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Profile Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Email</small>
+                        <p class="mb-0">{{ user_data.email }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Member Since</small>
+                        <p class="mb-0">{{ user_data.created_at.strftime('%B %d, %Y') }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Last Login</small>
+                        <p class="mb-0">{{ user_data.last_login.strftime('%B %d, %Y %H:%M') }}</p>
+                    </div>
+                    
+                    {% if is_person %}
+                    <div class="mb-3">
+                        <small class="text-muted">Profession</small>
+                        <p class="mb-0">{{ user_data.profession or 'Not specified' }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if is_person %}
+            <!-- Skills -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Skills</h5>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if user_data.skills %}
+                        {% for skill in user_data.skills %}
+                        <span class="badge bg-primary me-2 mb-2">{{ skill }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">No skills added yet</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Experiences -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Experiences</h5>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if user_data.experience %}
+                        {% for skill in user_data.experience %}
+                        <span class="badge bg-primary me-2 mb-2">{{ experience }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">No experience added yet</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-8">
+            {% if is_person %}
+            <!-- Recent Applications -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Applications</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_data.recent_applications %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Job Title</th>
+                                    <th>Company</th>
+                                    <th>Status</th>
+                                    <th>Applied Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in user_data.recent_applications %}
+                                <tr>
+                                    <td>{{ app.job.title }}</td>
+                                    <td>{{ app.job.company.name }}</td>
+                                    <td>{{ app.status }}</td>
+                                    <td>{{ app.applied_at.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No recent applications</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% elif is_company %}
+            <!-- Recent Jobs -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Job Postings</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_data.recent_jobs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Applications</th>
+                                    <th>Status</th>
+                                    <th>Posted Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for job in user_data.recent_jobs %}
+                                <tr>
+                                    <td>{{ job.title }}</td>
+                                    <td>{{ job.applications|length }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if job.is_active else 'secondary' }}">
+                                            {{ 'Active' if job.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ job.created_at.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No jobs posted yet</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
-
-<script>
-    //here the needed scripts
-</script>
 
 {% endblock %}
