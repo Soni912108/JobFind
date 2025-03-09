@@ -69,7 +69,7 @@ class Company(User):
 
     id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     description = db.Column(LONGTEXT)
-    
+    social_links = db.Column(JSON)
     # Relationship for jobs
     jobs = db.relationship('Job', backref='company', lazy=True, cascade="all, delete-orphan")
 
