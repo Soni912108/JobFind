@@ -371,6 +371,7 @@ def register_post():
                 name=req_data.get("name"),
                 surname=req_data.get("surname"),
                 profession=req_data.get("profession"),
+                location=req_data.get("location"),
                 password=generate_password_hash(req_data.get("password"), method='pbkdf2')
             )
             

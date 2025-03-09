@@ -7,6 +7,29 @@
     <h2 class="mb-4"><i class="fas fa-file-alt me-2"></i>My Applications</h2>
     
     {% if applications %}
+        <div class="search-wrapper px-3 pt-3">
+            <div class="search-container position-relative">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="search" 
+                        class="form-control border-start-0 ps-0 shadow-none"
+                        id="applicationsSearch" 
+                        placeholder="Search applications..." 
+                        value="{{ request.args.get('search', '') }}"
+                        autocomplete="off"
+                        aria-label="Search applications">
+                    {% if request.args.get('search') %}
+                        <button id="removeFilters" 
+                                class="btn btn-link text-muted border-0"
+                                title="Clear search">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
         <div class="row">
             {% for job, application in applications %}
                 <div class="col-md-6 mb-3">

@@ -2,7 +2,44 @@
 <title>Footer</title>
 {% endblock %}
 {% block body %}
-    <footer>
-        <p>&copy; 2021 JobFind</p>
+    <footer class="bg-light text-center text-lg-start">
+        <div class="container p-4">
+            <div class="row">
+                <div class="col-lg-6 col-md-12 mb-4 mb-md-0">
+                    <h5 class="text-uppercase">JobFind</h5>
+                    <p>
+                        Your go-to platform for finding the best job opportunities.
+                    </p>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
+                    <h5 class="text-uppercase">Links</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li>
+                            <a href="{{ url_for('frontend.jobs') }}" class="text-dark">Home</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
+                    <h5 class="text-uppercase">Follow Us</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li>
+                            <a href="#" class="text-dark"><i class="fab fa-facebook-f me-2"></i>Facebook</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-dark"><i class="fab fa-twitter me-2"></i>Twitter</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-dark"><i class="fab fa-instagram me-2"></i>Instagram</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="text-center p-3 text-dark w-100 bottom-0">
+            &copy; <span id="current-year"></span> JobFind
+        </div>
     </footer>
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
 {% endblock %}
