@@ -49,15 +49,59 @@
                         <input type="text" class="form-control" value="{{ user_data.location }}">
                     </div>
                     {% if is_person %}
-                    <div class="mb-3">
-                        <label class="form-label">Profession</label>
-                        <input type="text" class="form-control" value="{{ user_data.profession }}">
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label">Profession</label>
+                            <input type="text" class="form-control" value="{{ user_data.profession }}">
+                        </div>
+                        {% if user_data.skills %}
+                            <div class="mb-3">
+                                <label class="form-label">Skills</label>
+                                <input type="text" class="form-control" value="{{ user_data.skills }}">
+                            </div>
+                        {% else %}
+                            <div class="mb-3">
+                                <label class="form-label">Skills</label>
+                                <input type="text" class="form-control" value="No Skills added">
+                            </div>
+                        {% endif %}
+                        {% if user_data.experience %}
+                            <div class="mb-3">
+                                <label class="form-label">Experience</label>
+                                <textarea class="form-control" rows="3">{{ user_data.experience }}</textarea>
+                            </div>
+                        {% else %}
+                        <div class="mb-3">
+                            <label class="form-label">Skills</label>
+                            <input type="text" class="form-control" value="No Experience added">
+                        </div>
+                        {% endif %}
+                        {% if user_data.current_company_info %}
+                            <div class="mb-3">
+                                <label class="form-label">Current Company Info</label>
+                                <textarea class="form-control" rows="3">{{ user_data.current_company_info }}</textarea>
+                            </div>
+                        {% else %}
+                            <div class="mb-3">
+                                <label class="form-label">Current Company Info</label>
+                                <textarea class="form-control" rows="3">No data</textarea>
+                            </div>
+                        {% endif %}
                     {% elif is_company %}
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" rows="3">{{ user_data.description }}</textarea>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="3">{{ user_data.description }}</textarea>
+                        </div>
+                        {% if user_data.social_links %}
+                            <div class="mb-3">
+                                <label class="form-label">Social Links</label>
+                                <textarea class="form-control" rows="3">{{ user_data.social_links }}</textarea>
+                            </div>
+                        {% else %}
+                            <div class="mb-3">
+                                <label class="form-label">Social Links</label>
+                                <textarea class="form-control" rows="3">No data</textarea>
+                            </div>
+                        {% endif %}
                     {% endif %}
                 </form>
             </div>
