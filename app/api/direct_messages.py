@@ -34,9 +34,13 @@ def new_room():
         if not other_user:
             flash("Invalid other user", "danger")
             return jsonify({"success": False, "message": "Invalid other user"})
+        
+        if Room.query.filter_by(name=request.form.get("name")).first():
+            return jsonify({"success": False, "message": "Room name already in use"})
+
         # check if a room between users already exists - maybe user needs to be redirected to it
         if Room.query.filter_by(name=request.form.get("name"),owner_id=current_user.id,other_user_id=other_user.id,is_active=True).first():
-            flash("You already have a room with this name and user, do you want to redirect there?")
+            flash("You already have a room with this name and user, do you want to redirect there?", "info")
         
         # Create new room with simplified structure
         new_room = Room(
@@ -62,7 +66,7 @@ def new_room():
 def join_room_route(room_id):
     try:
         if not room_id:
-            return jsonify({"error": "Room not found"}), 404
+            return render_template("errors/404.html"), 404
 
         # Get room and check authorization
         room = Room.query.filter(
@@ -74,8 +78,7 @@ def join_room_route(room_id):
         ).first()
 
         if not room:
-            flash("Room not found or access denied", "danger")
-            return jsonify({"error": "Room not found"}), 404
+            return render_template("errors/404.html"), 404
 
         # Get other participant's info using the helper method
         other_participant = room.get_other_participant(current_user.id)
@@ -130,35 +133,45 @@ def delete_room():
 @direct_messages_bp.route("room/rename/", methods=["POST"])
 @login_required
 def rename_room():
-    room_name = request.form.get("name")
-    room_id = int(request.form.get("room-id"))
+    try:
+        room_name = request.form.get("name")
+        print(f"Received room name: {room_name}")
+        room_id = int(request.form.get("room-id"))
 
-    if not room_id:
-        flash("Room not found","danger")
-        return redirect(request.referrer or url_for('frontend.rooms'))
-    
-    if not room_name:
-        flash("Room name can not be empty","warning")
-        return redirect(request.referrer or url_for('frontend.rooms'))
-    
-    room_to_rename = Room.query.filter_by(id=room_id, owner_id=current_user.id).first()
-    if not room_to_rename:
-        flash("Room not found","danger")
-        return redirect(request.referrer or url_for('frontend.rooms'))
-    else:
-        # in case user is trying to update the same name - allow it, 
-        # but make sure name does not belong to other room
-        if room_name.strip() != room_to_rename.name:
-            # check if the room name is already in use
-            existing_room =Room.query.filter_by(name=room_name, owner_id=current_user.id).first()
-            if existing_room:
-                flash("Room name is already in use, please choose another!","warning")
+        if not room_id:
+            flash("Room not found","danger")
+            return redirect(request.referrer or url_for('frontend.rooms'))
+        
+        if not room_name:
+            flash("Room name can not be empty","warning")
+            return redirect(request.referrer or url_for('frontend.rooms'))
+        
+        room_to_rename = Room.query.filter_by(id=room_id, owner_id=current_user.id).first()
+        if not room_to_rename:
+            flash("Room not found","danger")
+            return redirect(request.referrer or url_for('frontend.rooms'))
+        else:
+            print(f"Room name found on DB: {room_to_rename}")
+            # in case user is trying to update the same name - allow it, 
+            # but make sure name does not belong to other room
+            if room_name.strip() != room_to_rename.name:
+                # check if the room name is already in use
+                existing_room =Room.query.filter_by(name=room_name, owner_id=current_user.id).first()
+                if existing_room:
+                    flash("Room name is already in use, please choose another!","warning")
+                    return redirect(request.referrer or url_for('frontend.rooms'))
 
-    # update the room name after checks are passed
-    room_to_rename.name = room_name
-    db.session.commit()
-    flash("Room renamed successfully", "success")
-    return redirect(url_for("frontend.rooms"))
+        # update the room name after checks are passed
+        room_to_rename.name = room_name
+        db.session.commit()
+        flash("Room renamed successfully", "success")
+        return redirect(url_for("frontend.rooms"))
+
+    except Exception as e:
+        db.session.rollback()
+        print("Error renaming room:", str(e))
+        flash("Error renaming room", "danger")
+        return jsonify({"success": False, "message": str(e)})
 
 
 

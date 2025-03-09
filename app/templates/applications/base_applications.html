@@ -187,6 +187,50 @@
 
 {% block scripts %}
 <script>
+
+    //scripts to handle the search and pagination logic - via URL
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('applicationsSearch');
+        const removeFiltersBtn = document.getElementById('removeFilters');
+
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function (event) {
+                if (event.key === 'Enter') {
+                    const searchValue = searchInput.value.trim();
+                    const url = new URL(window.location.href);
+                    if (searchValue) {
+                        url.searchParams.set('search', searchValue);
+                        url.searchParams.set('page', 1); // Reset to the first page on new search
+                    } else {
+                        url.searchParams.delete('search'); // Remove search if empty
+                    }
+                    window.location.replace(url);
+                }
+            });
+
+            searchInput.addEventListener('input', function () {
+                if (removeFiltersBtn) {
+                    removeFiltersBtn.style.display = searchInput.value.trim() ? 'inline-flex' : 'none';
+                }
+            });
+        }
+
+        if (removeFiltersBtn) {
+            removeFiltersBtn.addEventListener('click', function () {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('search'); // Remove the search parameter from the URL
+                window.location.replace(url); // Reload the page with the updated URL
+            });
+
+            // Initialize visibility of the Remove Filters button on page load
+            if (searchInput && removeFiltersBtn) {
+                removeFiltersBtn.style.display = searchInput.value.trim() ? 'inline-flex' : 'none';
+            }
+        }
+    });
+
+
+
     function getJobInfo(jobId, modalName) {
         // Set the hidden job-id field
         document.getElementById('view-application-id').value = jobId;
