@@ -19,11 +19,13 @@ app = Flask(__name__)
 MEGABYTE = (2 ** 10) ** 2 #  50 MB memory size
 app.config['MAX_CONTENT_LENGTH'] = 50 * MEGABYTE #  50 MB memory size
 app.config['MAX_FORM_MEMORY_SIZE'] = 50 * MEGABYTE #  50 MB memory size
-
 # Configure the app 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv('SQLALCHEMY_DATABASE_URI')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# for resume uploads
+app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'resume_upload')
+
 
 def create_app():
     # Initialize the app

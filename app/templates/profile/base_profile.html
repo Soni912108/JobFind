@@ -112,6 +112,73 @@
         </div>
     </div>
 </div>
+
+
+<!-- Applicant Modals - One for each job -->
+{% if user_data and user_data.recent_jobs %}
+    {% for job in user_data.recent_jobs %}
+    <div class="modal fade" id="applicantsModal{{ job.id }}" tabindex="-1" aria-labelledby="applicantsModalLabel{{ job.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="applicantsModalLabel{{ job.id }}">Applicants for "{{ job.title }}"</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Job Title</th>
+                                    <th>Applicant Name</th>
+                                    <th>Applicant Profession</th>
+                                    <th>Status</th>
+                                    <th>Applied Date</th>
+                                    <th>More Info</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if job.applications %}
+                                    <!-- color rules -->
+                                    {% set status_colors = {
+                                        'pending': 'warning',
+                                        'rejected': 'danger',
+                                        'accepted': 'success',
+                                        'under_review': 'info'
+                                    } %}
+                                    {% for app in job.applications %}
+                                    <tr>
+                                        <td>{{ app.job.title }}</td>
+                                        <td>{{ app.applicant.name }} {{ app.applicant.surname }}</td>
+                                        <td>{{ app.applicant.profession }}</td>
+                                        <td>
+                                            <i class="fas fa-info-circle me-2 text-{{ status_colors.get(app.status.lower(), 'secondary') }}"></i>
+                                            <span class="badge bg-{{ status_colors.get(app.status.lower(), 'secondary') }}">
+                                                {{ app.status.capitalize() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ app.applied_at.strftime('%Y-%m-%d') }}</td>
+                                        <td><a href="#">View Full Details</a></td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">No applications yet</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
 {% endblock %}
 
 

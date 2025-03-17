@@ -1,4 +1,6 @@
 from flask import Blueprint, request, flash, redirect, url_for, jsonify
+from werkzeug.utils import secure_filename
+from app.utils.file_handler import save_resume, delete_resume
 from app import db
 from app.models import Person, Company, Job, JobApplication
 from datetime import datetime
@@ -39,10 +41,15 @@ def delete_application():
 
     return redirect(url_for('frontend.applications_page'))
 
+
+
+
 @applications_bp.route("/application/update/", methods=["POST"])
 @login_required
 def update_application():
-    # Check if user is a Person
+    print(f"Request form on update application: {request.form}")
+    print(f"Request files on update application: {request.files}")
+    
     if not isinstance(current_user, Person) or not current_user.can_apply_to_job():
         flash("Only Professionals can update applications", "danger")
         return redirect(url_for('frontend.applications_page'))
@@ -52,7 +59,6 @@ def update_application():
         flash("An unexpected error occurred", "warning")
         return redirect(url_for('frontend.index'))
 
-    # Find application using the unified User model
     application = JobApplication.query.filter_by(
         id=application_id,
         applicant_id=current_user.id
@@ -61,11 +67,17 @@ def update_application():
     if not application:
         flash("Application not found", "warning")
         return redirect(url_for('frontend.applications_page'))
-
+    
     try:
-        # Update application fields
-        if 'resume' in request.form:
-            application.resume = request.form.get('resume')
+        if 'resume' in request.files:
+            print("Resume file found.")
+            unique_filename, file_url = save_resume(request.files.get('resume'))
+            print(unique_filename, file_url)
+            if unique_filename:
+                application.resume_filename = unique_filename
+            else:
+                flash("Error saving resume file", "danger")
+                return redirect(url_for('frontend.applications_page'))
         
         application.updated_at = datetime.now()
         db.session.commit()
@@ -76,6 +88,9 @@ def update_application():
         flash("Error updating application", "danger")
 
     return redirect(url_for('frontend.applications_page'))
+
+
+
 
 @applications_bp.route("/application/list/<int:job_id>", methods=["GET"])
 @login_required
@@ -115,6 +130,9 @@ def list_applications(job_id):
         print("Error fetching applications:", str(e))
         return jsonify({"error": "Error fetching applications"}), 500
 
+
+
+
 @applications_bp.route("/application/detail/<int:application_id>", methods=["GET"])
 @login_required
 def application_detail(application_id):
@@ -141,9 +159,11 @@ def application_detail(application_id):
         return jsonify({
             "id": application.id,
             "job_title": application.job.title,
+            "job_status": application.job.is_active,
             "company_name": application.job.company.name,
             "applicant_name": application.applicant.name,
             "applicant_email": application.applicant.email,
+            "status" : application.status,
             "resume": application.resume if hasattr(application, 'resume') else None,
             "applied_at": application.applied_at.strftime("%Y-%m-%d %H:%M:%S") if application.applied_at else None,
             "updated_at": application.updated_at.strftime("%Y-%m-%d %H:%M:%S") if application.updated_at else None
