@@ -9,7 +9,7 @@
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="viewApplicationModalLabel">
-                    <i class="fas fa-briefcase me-2"></i>Application Information
+                    <i class="fas fa-briefcase me-2"></i>Job Information
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -90,6 +90,45 @@
     </div>
 </div>
 
+
+<!-- Update Application Modal -->
+<div class="modal fade" id="updateApplicationModal" tabindex="-1" aria-labelledby="updateApplicationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateApplicationModalLabel">Update Application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateApplicationForm" action="{{ url_for('applications.update_application') }}" 
+                      method="POST" enctype="multipart/form-data">
+                    <input type="hidden" id="updateApplicationId" name="applicationId">
+                    
+                    <div class="mb-3">
+                        <label for="resumeFile" class="form-label">Update Resume</label>
+                        <input type="file" class="form-control" id="resumeFile" name="resume"
+                               accept=".pdf,.doc,.docx" required>
+                        <div class="form-text">
+                            Accepted formats: PDF, DOC, DOCX (Max size: 5MB)
+                        </div>
+                    </div>
+
+                    <!-- Current resume display if exists -->
+                    <div id="currentResumeInfo" class="mb-3 d-none">
+                        <p class="text-muted">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            Current resume: <span id="currentResumeName"></span>
+                        </p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" form="updateApplicationForm" class="btn btn-primary">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Confirmation Modal -->
 <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
@@ -291,6 +330,39 @@
         deleteApplicationModal.show();
     }
 
+    //update application - change resume
+    function updateApplication(applicationId, currentResume) {
+        // Reset form
+        document.getElementById('updateApplicationForm').reset();
+        
+        // Set application ID
+        document.getElementById('updateApplicationId').value = applicationId;
+        
+        // Show current resume if exists
+        const currentResumeInfo = document.getElementById('currentResumeInfo');
+        const currentResumeName = document.getElementById('currentResumeName');
+        
+        if (currentResume) {
+            currentResumeInfo.classList.remove('d-none');
+            currentResumeName.textContent = currentResume;
+        } else {
+            currentResumeInfo.classList.add('d-none');
+        }
+        
+        // File size validation
+        document.getElementById('resumeFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.size > 5 * 1024 * 1024) { // 5MB
+                alert('File size must be less than 5MB');
+                this.value = '';
+            }
+        });
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('updateApplicationModal'));
+        modal.show();
+    }
+    
     // Function to show the toast messages(or errors)
     function showToast(message, isError = false) {
         const toast = document.getElementById('jobToast');

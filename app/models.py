@@ -145,15 +145,16 @@ class Job(db.Model):
 
 
 class JobApplication(db.Model):
-    """Job application by a person"""
     __tablename__ = 'job_applications'
-
+    
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
     applicant_id = db.Column(db.Integer, db.ForeignKey('persons.id'), nullable=False)
-    resume = db.Column(LONGTEXT)
-    applied_at = db.Column(DateTime, default=datetime.now)
+    # Store only the unique filename or URL
+    resume_filename = db.Column(db.String(255))
     status = db.Column(db.String(100), default="pending")
+    applied_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     @property
     def calculate_days_applied(self):
@@ -164,9 +165,8 @@ class JobApplication(db.Model):
         return {
             "id": self.id,
             "applied_at": self.applied_at.strftime("%Y-%m-%d %H:%M:%S"),
-            "resume": self.resume,  
+            "resume_url": f"/static/resume_upload/{self.resume_filename}" if self.resume_filename else None,
         }
-
 
 class Notifications(db.Model):
     __tablename__ = 'notifications'
