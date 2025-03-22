@@ -1,7 +1,10 @@
-from flask import Blueprint, request, flash, redirect, url_for, jsonify
+from flask import (
+    Blueprint, request, flash, redirect, url_for, 
+    jsonify,send_from_directory,render_template
+    )
 from werkzeug.utils import secure_filename
-from app.utils.file_handler import save_resume, delete_resume
-from app import db
+from app.utils.file_handler import save_resume, allowed_file
+from app import db, app # for the configs
 from app.models import Person, Company, Job, JobApplication
 from datetime import datetime
 from flask_login import login_required, current_user
@@ -71,7 +74,6 @@ def update_application():
     
     try:
         if 'resume' in request.files:
-            print("Resume file found.")
             unique_filename, file_url = save_resume(request.files.get('resume'))
             print(f"Saved file as {unique_filename}, URL: {file_url}")
             if unique_filename:
@@ -92,6 +94,19 @@ def update_application():
     return redirect(url_for('frontend.applications_page'))
 
 
+@applications_bp.route("/application/upload_resume/<string:file_name>", methods=["POST"])
+@login_required
+def upload_resume(file_name):
+    pass
+
+@applications_bp.route("/application/download_resume/<string:file_name>", methods=["GET"])
+@login_required
+def download_resume(file_name):
+    if file_name and allowed_file(file_name):
+        original_filename = secure_filename(file_name)
+        return send_from_directory(app.config["UPLOAD_FOLDER"], original_filename, as_attachment=True)
+
+    return render_template("errors/404.html"), 404
 
 
 @applications_bp.route("/application/list/<int:job_id>", methods=["GET"])

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 # local
+from app.utils.file_handler import save_resume, allowed_file
 from app import db
 from app.models import  Company, Person, Job, JobApplication
 from datetime import datetime
@@ -180,6 +181,13 @@ def apply_job(job_id):
             job_id=job_id,
             applied_at=datetime.now()
         )
+
+        if 'resume' in request.files:
+            unique_filename, file_url = save_resume(request.files.get('resume'))
+            print(f"In JOBS: Saved file as {unique_filename}, URL: {file_url}")
+            if unique_filename:
+                application.resume_filename = unique_filename
+        
         db.session.add(application)
         db.session.commit()
 

@@ -42,19 +42,18 @@
                             {% if application.resume_filename %}
                                 <p class="card-text text-muted">
                                     <i class="fas fa-file-pdf me-2 text-success"></i>
-                                    <span class="text-success">
+                                    <a href="{{ url_for('applications.download_resume', file_name=application.resume_filename) }}" class="text-success">
                                         {{ application.resume_filename }}
-                                        <small>(Attached)</small>
-                                    </span>
+                                    </a>
+                                    <small>(Attached)</small>
                                 </p>
                             {% else %}
                                 <p class="card-text text-muted">
                                     <i class="fas fa-file-pdf me-2 text-danger"></i>
-                                    <span class="text-danger">
-                                        No resume attached
-                                    </span>
+                                    <span class="text-danger">No resume attached</span>
                                 </p>
                             {% endif %}
+
 
                             {% set status_colors = {
                                 'pending': 'warning',
