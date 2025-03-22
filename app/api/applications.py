@@ -34,6 +34,7 @@ def delete_application():
         db.session.delete(find_application)
         db.session.commit()
         flash("Application deleted successfully", "success")
+        return redirect(url_for('frontend.applications_page'))
     except Exception as e:
         db.session.rollback()
         print("Error deleting application:", str(e))
@@ -72,7 +73,7 @@ def update_application():
         if 'resume' in request.files:
             print("Resume file found.")
             unique_filename, file_url = save_resume(request.files.get('resume'))
-            print(unique_filename, file_url)
+            print(f"Saved file as {unique_filename}, URL: {file_url}")
             if unique_filename:
                 application.resume_filename = unique_filename
             else:
@@ -82,6 +83,7 @@ def update_application():
         application.updated_at = datetime.now()
         db.session.commit()
         flash("Application updated successfully", "success")
+        return redirect(url_for('frontend.applications_page'))
     except Exception as e:
         db.session.rollback()
         print("Error updating application:", str(e))

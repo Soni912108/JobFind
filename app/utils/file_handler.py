@@ -27,8 +27,9 @@ def save_resume(file):
         
         # Generate a URL that can be used to access the file, e.g. via static folder
         file_url = f"/static/resume_upload/{unique_filename}"
-        print(f"Saved file as {unique_filename}, URL: {file_url}")
+    
         return unique_filename, file_url
+    
     return None, None
 
 def delete_resume(filename):
