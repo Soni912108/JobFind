@@ -176,6 +176,33 @@
 </div>
 
 
+<!-- Resume Upload Modal -->
+<div class="modal fade" id="uploadResumeModal" tabindex="-1" aria-labelledby="uploadResumeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="uploadResumeModalLabel">Upload Resume</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="resumeUploadForm">
+            <div class="mb-3">
+              <label for="resumeUploadInput" class="form-label">Select Resume File</label>
+              <input type="file" class="form-control" id="resumeUploadInput" name="resume" accept=".pdf,.doc,.docx">
+              <div class="form-text">Accepted formats: PDF, DOC, DOCX (Max size: 5MB)</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="uploadResumeBtn" class="btn btn-primary">Upload</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+
+
 <!-- Confirmation Modal -->
 <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -389,38 +416,77 @@
         deleteJobModal.show();
     }
 
-    //function to send request to server for apply to a job
+    // function to apply for a job, asks for resume upload
     async function applyForJobPosition(jobId, btn) {
+        // Ask for confirmation before applying
         const confirmed = await showConfirmation('Are you sure you want to apply for this job?');
         if (!confirmed) return;
         
+        // Show the resume upload modal so the user can optionally provide a resume file
+        const uploadModalElement = document.getElementById('uploadResumeModal');
+        const uploadModal = new bootstrap.Modal(uploadModalElement);
+        uploadModal.show();
+
+        // Wait for the user to click the "Upload" button in the modal
+        const resumeUploadPromise = new Promise((resolve, reject) => {
+            // Remove any previous listeners by replacing the button
+            const uploadButtonOld = document.getElementById('uploadResumeBtn');
+            const uploadButton = uploadButtonOld.cloneNode(true);
+            uploadButtonOld.parentNode.replaceChild(uploadButton, uploadButtonOld);
+            
+            uploadButton.addEventListener('click', function() {
+                const fileInput = document.getElementById('resumeUploadInput');
+                // If a file is selected, resolve with that file; otherwise resolve with null
+                if (fileInput.files && fileInput.files.length > 0) {
+                    resolve(fileInput.files[0]);
+                } else {
+                    resolve(null);
+                }
+                uploadModal.hide();
+            });
+        });
+
+        let file = await resumeUploadPromise; // file will be a File object or null
+
+        // Create FormData object to send both job_id and the resume file (if provided)
+        const formData = new FormData();
+        formData.append('job_id', jobId);
+        if (file) {
+            formData.append('resume', file);
+        }
+        
+        // Disable the button to prevent duplicate submissions
+        if (btn) {
+            btn.disabled = true;
+        }
+        
+        // Send the application request with FormData (do not manually set Content-Type)
         fetch(`/jobs/job/apply/${jobId}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
+            body: formData
+        })
+        .then(response => response.json().then(data => {
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to apply for job');
             }
-        })
-        .then(response => {
-            return response.json().then(data => {
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to apply for job');
-                }
-                return data;
-            });
-        })
+            return data;
+        }))
         .then(data => {
             showToast(data.message, false);
-            // UPDATE: Disable the button and change its text to "Applied"
+            // Update the button to indicate that the application was submitted
             if (btn) {
-                btn.textContent = "Applied";  // Change button text
+                btn.textContent = "Applied";
                 btn.classList.remove("btn-success");
                 btn.classList.add("btn-secondary");
-                btn.disabled = true; // Disable the button so it can't be clicked again
+                btn.disabled = true;
             }
         })
         .catch(error => {
             console.error('Error:', error);
             showToast(error.message, true);
+            if (btn) {
+                btn.disabled = false;
+            }
         });
     }
 
