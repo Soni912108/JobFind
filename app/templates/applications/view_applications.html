@@ -39,11 +39,11 @@
                             <p class="card-text text-muted">
                                 <i class="fas fa-building me-2"></i>{{ job.company.name }}
                             </p>
-                            {% if application.resume %}
+                            {% if application.resume_filename %}
                                 <p class="card-text text-muted">
                                     <i class="fas fa-file-pdf me-2 text-success"></i>
                                     <span class="text-success">
-                                        {{ application.resume }}
+                                        {{ application.resume_filename }}
                                         <small>(Attached)</small>
                                     </span>
                                 </p>
