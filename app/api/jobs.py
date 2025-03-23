@@ -117,6 +117,41 @@ def update_job():
 
     return redirect(request.referrer or url_for('frontend.jobs'))
 
+
+# deactivate job
+@jobs_bp.route("/job/deactivate/<int:job_id>", methods=["POST"])
+@login_required
+def deactivate_job(job_id):
+    # Check if current user is a company
+    if not isinstance(current_user, Company) or not current_user.can_create_job():
+        return jsonify({"error": "Only companies can update jobs"}), 403
+
+    # make sure job exists and belongs to the current company
+    job = Job.query.filter_by(company_id=current_user.id, id=job_id).first()
+    if not job:
+        return jsonify({"error": "Job not found or unauthorized"}), 404
+    
+    try:
+        # Get new status from form data (active=true or active=false)
+        active = request.form.get('active', 'false').lower() == 'true'
+        
+        # Update job status
+        job.is_active = active
+        job.updated_at = datetime.now()
+        db.session.commit()
+        
+        status_text = "activated" if active else "deactivated"
+        return jsonify({
+            "success": True,
+            "message": f"Job {status_text} successfully",
+            "is_active": job.is_active
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        print("Error updating job status:", str(e))
+        return jsonify({"error": "Error updating job status"}), 500
+
+
 # delete job
 @jobs_bp.route("/job/delete/", methods=["POST"])
 @login_required
@@ -154,9 +189,9 @@ def apply_job(job_id):
     print(f"Job ID from URL: {job_id}")
 
     # Check if job exists
-    job = Job.query.filter_by(id=job_id).first()
+    job = Job.query.filter_by(id=job_id, is_active=True).first()
     if not job:
-        return jsonify({"error": "Job not found"}), 404
+        return jsonify({"error": "Job not found or inactive"}), 404
     
     # Check if the user is a Person and can apply
     if not isinstance(current_user, Person) or not current_user.can_apply_to_job():
@@ -165,7 +200,7 @@ def apply_job(job_id):
     # Check if already applied
     already_applied = JobApplication.query.filter_by(
         job_id=job.id,
-        applicant_id=current_user.id
+        applicant_id=current_user.id,
     ).first()
     
     print(already_applied)

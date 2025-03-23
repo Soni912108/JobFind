@@ -158,7 +158,13 @@
                                             </span>
                                         </td>
                                         <td>{{ app.applied_at.strftime('%Y-%m-%d') }}</td>
-                                        <td><a href="#">View Full Details</a></td>
+                                        <td>
+                                            <button class="btn btn-link btn-sm p-0 ms-2" 
+                                                onclick="viewApplication('{{ app.id }}')"
+                                                title="View Application Details">
+                                                <i class="fas fa-eye"></i> View Details
+                                            </button>
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 {% else %}
@@ -186,6 +192,10 @@
 
 {% block scripts %}
 <script>
+    // Function to view application details from a notification
+    function viewApplication(applicationId) {
+        window.location.href = `/applications/view/${applicationId}`;
+    }
     // Function to show the toast notifications(or errors)
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');

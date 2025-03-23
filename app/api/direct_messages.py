@@ -251,7 +251,7 @@ def new_message(data):
         other_participant = room.get_other_participant(current_user.id)
         # Check if other participant's socket is not in the room
         if str(room_id) not in rooms(other_participant.id):
-            notification_message = f"New message from {current_user.name} on room {room_id}"
+            notification_message = f"New message from {current_user.name} on room {Room.query.get(room_id).name}. with: {room_id}"
             create_notification(other_participant.id, notification_message, emit_notification=True)
             print(f"Notification created for user {other_participant.id}")
     except Exception as notif_error:

@@ -2,9 +2,18 @@
 
 {% block head %}
 <style>
-  /* Custom styles for notifications */
+  /* Enhanced notification styles */
   .notification-card {
     margin-bottom: 1rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 4px solid #dee2e6;
+  }
+  .notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  .notification-card.unread {
+    background-color: rgba(13, 110, 253, 0.05);
   }
   .notification-card .card-body {
     display: flex;
@@ -18,6 +27,76 @@
     font-size: 0.8rem;
     color: #6c757d;
   }
+  
+  /* Status colors - made stronger and more specific */
+  .status-text-accepted {
+    color: #198754 !important;
+    font-weight: 500;
+  }
+  .card.notification-card.status-card-accepted {
+    border-left: 4px solid #198754 !important;
+  }
+  
+  .status-text-rejected {
+    color: #dc3545 !important;
+    font-weight: 500;
+  }
+  .card.notification-card.status-card-rejected {
+    border-left: 4px solid #dc3545 !important;
+  }
+  
+  .status-text-pending {
+    color: #ffc107 !important;
+    font-weight: 500;
+  }
+  .card.notification-card.status-card-pending {
+    border-left: 4px solid #ffc107 !important;
+  }
+  
+  .status-text-under_review {
+    color: #0dcaf0 !important;
+    font-weight: 500;
+  }
+  .card.notification-card.status-card-under_review {
+    border-left: 4px solid #0dcaf0 !important;
+  }
+  
+  /* Message type indicators */
+  .notification-type-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 8px;
+    font-size: 0.8rem;
+    color: white;
+  }
+  
+  .indicator-room {
+    background-color: #6f42c1; /* Bootstrap purple */
+  }
+  
+  .indicator-application {
+    background-color: #0d6efd; /* Bootstrap primary */
+  }
+  
+  .indicator-general {
+    background-color: #6c757d; /* Bootstrap secondary */
+  }
+  
+  /* Action buttons */
+  .notification-actions .btn {
+    margin-left: 5px;
+  }
+  
+  .action-button {
+    transition: all 0.2s;
+  }
+  .action-button:hover {
+    transform: scale(1.05);
+  }
 </style>
 {% endblock %}
 
@@ -27,46 +106,143 @@ Notifications
 
 {% block body %}
 <div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-bell me-2"></i>Notifications</h2>
+    {% if notifications %}
+    <button id="markAllRead" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-check-double me-1"></i>Mark All as Read
+    </button>
+    {% endif %}
+  </div>
+
   {% if notifications %}
     <div class="row">
       {% for notification in notifications %}
+        {% set card_status_class = "" %}
+        {% set text_status_class = "" %}
+        {% set indicator_class = "indicator-general" %}
+        {% set indicator_icon = "fa-bell" %}
+        
+        {% if ' with: ' in notification.message %}
+          {% set indicator_class = "indicator-room" %}
+          {% set indicator_icon = "fa-comments" %}
+        {% elif 'application_id: ' in notification.message %}
+          {% set indicator_class = "indicator-application" %}
+          {% set indicator_icon = "fa-file-alt" %}
+          
+          {% set parts = notification.message.split('. application_id: ') %}
+          {% set clean_message = parts[0] %}
+          
+          {% if 'accepted' in clean_message.lower() %}
+            {% set card_status_class = "status-card-accepted" %}
+            {% set text_status_class = "status-text-accepted" %}
+          {% elif 'rejected' in clean_message.lower() %}
+            {% set card_status_class = "status-card-rejected" %}
+            {% set text_status_class = "status-text-rejected" %}
+          {% elif 'under review' in clean_message.lower() %}
+            {% set card_status_class = "status-card-under_review" %}
+            {% set text_status_class = "status-text-under_review" %}
+          {% else %}
+            {% set card_status_class = "status-card-pending" %}
+            {% set text_status_class = "status-text-pending" %}
+          {% endif %}
+        {% endif %}
+        
         <div class="col-md-12">
-          <div class="card notification-card">
+          <div class="card notification-card {% if not notification.read %}unread{% endif %} {{ card_status_class }}">
             <div class="card-body">
-              <div>
-                <p class="notification-message mb-0">
-                  {% if 'room' in notification.message %}
-                      {% set room_id = notification.message.split('room ')[-1] %}
-                      {{ notification.message }}
-                      <button class="btn btn-link btn-sm p-0 ms-2" 
+              <div class="d-flex flex-column" style="flex: 1;">
+                <div class="d-flex align-items-center">
+                  <span class="notification-type-indicator {{ indicator_class }}">
+                    <i class="fas {{ indicator_icon }}"></i>
+                  </span>
+                  
+                  <p class="notification-message mb-0">
+                    {% if ' with: ' in notification.message %}
+                      {% set parts = notification.message.split('. with: ') %}
+                      {% set clean_message = parts[0] %}
+                      {% set room_id = parts[1] %}
+                      
+                      {{ clean_message }}
+                      <button class="btn btn-link btn-sm p-0 ms-2 action-button" 
                               onclick="joinRoom('{{ room_id }}')"
                               title="Join Room">
                           <i class="fas fa-arrow-right"></i> Join Room
                       </button>
-                  {% else %}
-                      {{ notification.message }}
-                  {% endif %}
-              </p>
-                <small class="notification-timestamp">{{ notification.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                    
+                    {% elif 'application_id: ' in notification.message %}
+                      {% set parts = notification.message.split('. application_id: ') %}
+                      {% set clean_message = parts[0] %}
+                      {% set application_id = parts[1] | trim %}
+                      
+                      {% if 'accepted' in clean_message.lower() %}
+                          <span class="{{ text_status_class }}">
+                              <i class="fas fa-check-circle me-1"></i>
+                              {{ clean_message }}
+                          </span>
+                      {% elif 'rejected' in clean_message.lower() %}
+                          <span class="{{ text_status_class }}">
+                              <i class="fas fa-times-circle me-1"></i>
+                              {{ clean_message }}
+                          </span>
+                      {% elif 'under review' in clean_message.lower() %}
+                          <span class="{{ text_status_class }}">
+                              <i class="fas fa-search me-1"></i>
+                              {{ clean_message }}
+                          </span>
+                      {% else %}
+                          <span class="{{ text_status_class }}">
+                              <i class="fas fa-clock me-1"></i>
+                              {{ clean_message }}
+                          </span>
+                      {% endif %}
+                      
+                      <button class="btn btn-link btn-sm p-0 ms-2 action-button" 
+                              onclick="viewApplication('{{ application_id }}')"
+                              title="View Application Details">
+                          <i class="fas fa-eye"></i> View Details
+                      </button>
+                    {% else %}
+                        {{ notification.message }}
+                    {% endif %}
+                  </p>
+                </div>
+                
+                <div class="mt-1">
+                  <small class="notification-timestamp">
+                    <i class="far fa-clock me-1"></i>{{ notification.created_at.strftime('%b %d, %Y %I:%M %p') }}
+                    {% if not notification.read %}
+                      <span class="badge bg-primary ms-2">New</span>
+                    {% endif %}
+                  </small>
+                </div>
               </div>
-              <div>
+              
+              <div class="notification-actions">
                 {% if not notification.read %}
-                    <button class="btn btn-sm btn-outline-primary" 
-                            onclick="markAsRead('{{ notification.id }}', this)">
-                      Mark as Read
+                    <button class="btn btn-sm btn-outline-primary action-button" 
+                            onclick="markAsRead('{{ notification.id }}', this)"
+                            title="Mark as Read">
+                      <i class="fas fa-check me-1"></i>Read
                     </button>
                 {% else %}
-                    <button class="btn btn-sm btn-success" disabled="true">Read</button>
+                    <button class="btn btn-sm btn-success" disabled="true" title="Already Read">
+                      <i class="fas fa-check me-1"></i>Read
+                    </button>
                 {% endif %}
-                </div>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification('{{ notification.id }}', this)">
-                  Delete
+                
+                <button class="btn btn-sm btn-outline-danger action-button" 
+                        onclick="deleteNotification('{{ notification.id }}', this)"
+                        title="Delete Notification">
+                  <i class="fas fa-trash me-1"></i>Delete
                 </button>
+              </div>
             </div>
           </div>
         </div>
       {% endfor %}
     </div>
+    
     <!-- Pagination - Outside of notification cards grid -->
     <div class="row mt-4">
       <div class="col">
@@ -76,14 +252,15 @@ Notifications
       </div>
     </div>
   {% else %}
-    <div class="alert alert-info text-center">
-      No notification found.
+    <div class="alert alert-info text-center py-5">
+      <i class="fas fa-bell-slash fa-3x mb-3"></i>
+      <p class="mb-0">No notifications found.</p>
     </div>
   {% endif %}
 </div>
 
 <script>
-  //mark as read notification function
+  // Mark as read notification function
   async function markAsRead(notificationId, btn) {
     // Ask for confirmation via the modal
     const confirmed = await showConfirmation('Are you sure you want to mark as read?');
@@ -104,19 +281,27 @@ Notifications
         showToast(data.message, false);
         // Update the button to display "Read" and disable it
         if (btn) {
-            btn.textContent = "Read";
+            btn.innerHTML = '<i class="fas fa-check me-1"></i>Read';
             btn.classList.remove("btn-outline-primary");
             btn.classList.add("btn-success");
             btn.disabled = true;
+            
+            // Remove unread styling and "New" badge
+            const card = btn.closest('.notification-card');
+            card.classList.remove('unread');
+            const badgeElement = card.querySelector('.badge.bg-primary');
+            if (badgeElement) {
+                badgeElement.remove();
+            }
         }
     })
     .catch(error => {
         console.error('Error:', error);
         showToast(error.message, true);
     });
-}
+  }
 
-  //delete the notification
+  // Delete the notification
   async function deleteNotification(notificationId, btn) {
     // Ask for confirmation using the modal
     const confirmed = await showConfirmation('Are you sure you want to delete this notification?');
@@ -137,10 +322,28 @@ Notifications
     .then(data => {
         showToast(data.message, false);
         if (btn) {
-            // delete notification
+            // Animate and delete notification
             const notificationElement = btn.closest('.card.notification-card');
             if (notificationElement) {
-                notificationElement.remove();
+                notificationElement.style.opacity = '0';
+                setTimeout(() => {
+                    notificationElement.remove();
+                    
+                    // If no notifications left, show the empty state
+                    if (document.querySelectorAll('.notification-card').length === 0) {
+                        const container = document.querySelector('.container');
+                        container.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h2><i class="fas fa-bell me-2"></i>Notifications</h2>
+                            </div>
+                            <div class="alert alert-info text-center py-5">
+                                <i class="fas fa-bell-slash fa-3x mb-3"></i>
+                                <p class="mb-0">No notifications found.</p>
+                            </div>
+                        `;
+                    }
+                }, 300);
+                notificationElement.style.transition = 'opacity 0.3s';
             }
         }
     })
@@ -148,7 +351,8 @@ Notifications
         console.error('Error:', error);
         showToast(error.message, true);
     });
-}
+  }
+
   function joinRoom(roomId) {
     // Simple form submission to handle the POST request
     const form = document.createElement('form');
@@ -156,7 +360,52 @@ Notifications
     form.action = `/messages/room/join/${roomId}`;
     document.body.appendChild(form);
     form.submit();
-}
+  }
 
+  // Function to view application details from a notification
+  function viewApplication(applicationId) {
+    window.location.href = `/applications/view/${applicationId}`;
+  }
+  
+  // Mark all as read functionality
+  document.getElementById('markAllRead')?.addEventListener('click', async function() {
+    const confirmed = await showConfirmation('Are you sure you want to mark all notifications as read?');
+    if (!confirmed) return;
+    
+    fetch('/notifications/notification/mark_all_read', {
+        method: 'POST'
+    })
+    .then(response => {
+        return response.json().then(data => {
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to mark all notifications as read');
+            }
+            return data;
+        });
+    })
+    .then(data => {
+        showToast(data.message || 'All notifications marked as read', false);
+        
+        // Update UI
+        document.querySelectorAll('.notification-card.unread').forEach(card => {
+            card.classList.remove('unread');
+            const readBtn = card.querySelector('.btn-outline-primary');
+            if (readBtn) {
+                readBtn.innerHTML = '<i class="fas fa-check me-1"></i>Read';
+                readBtn.classList.remove("btn-outline-primary");
+                readBtn.classList.add("btn-success");
+                readBtn.disabled = true;
+            }
+            const badgeElement = card.querySelector('.badge.bg-primary');
+            if (badgeElement) {
+                badgeElement.remove();
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast(error.message, true);
+    });
+  });
 </script>
 {% endblock %}
