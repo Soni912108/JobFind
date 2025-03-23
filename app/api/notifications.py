@@ -8,6 +8,7 @@ from flask_socketio import join_room,emit
 
 notifications_bp = Blueprint("notifications",__name__)
 
+# mark a single notification as read
 @notifications_bp.route("/notification/mark_read/<int:notification_id>", methods=["POST"])
 @login_required
 def mark_notification_read(notification_id):
@@ -19,7 +20,19 @@ def mark_notification_read(notification_id):
     
     return jsonify({"error": "Notification not found"}), 404
 
+# mark all user's notifications as read
+@notifications_bp.route("/notification/mark_all_read", methods=["POST"])
+@login_required
+def mark_all_read():
+    all_current_user_notifications = Notifications.query.filter_by(receiver_id=current_user.id).all()
+    for notification in all_current_user_notifications:
+        notification.read = True
+        db.session.commit()
+        return jsonify({"message": "Notification mark as read"}),200
+    
+    return jsonify({"error": "No notifications found"}), 404
 
+# delete a notification
 @notifications_bp.route("/notification/delete/<int:notification_id>", methods=["POST"])
 @login_required
 def delete_notification(notification_id):

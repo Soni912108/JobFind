@@ -77,19 +77,20 @@ Rooms
 
 {% block body %}
 <div class="container-fluid p-0">
-    <div class="search-wrapper px-3 pt-3">
+    <!-- Compact search input -->
+    <div class="search-wrapper" style="max-width: 350px;">
         <div class="search-container position-relative">
             <div class="input-group">
                 <span class="input-group-text bg-transparent border-end-0">
                     <i class="fas fa-search text-muted"></i>
                 </span>
                 <input type="search" 
-                       class="form-control border-start-0 ps-0 shadow-none"
-                       id="roomSearch" 
-                       placeholder="Search conversations..." 
-                       value="{{ request.args.get('search', '') }}"
-                       autocomplete="off"
-                       aria-label="Search rooms">
+                    class="form-control border-start-0 ps-0 shadow-none"
+                    id="roomsSearch" 
+                    placeholder="Search rooms..." 
+                    value="{{ request.args.get('search', '') }}"
+                    autocomplete="off"
+                    aria-label="Search rooms">
                 {% if request.args.get('search') %}
                     <button id="removeFilters" 
                             class="btn btn-link text-muted border-0"
@@ -310,7 +311,7 @@ Rooms
 
     //scripts to handle the search and pagination logic - via URL
     document.addEventListener('DOMContentLoaded', function () {
-        const searchInput = document.getElementById('roomSearch');
+        const searchInput = document.getElementById('roomsSearch');
         const removeFiltersBtn = document.getElementById('removeFilters');
 
         if (searchInput) {

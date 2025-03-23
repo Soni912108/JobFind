@@ -1,0 +1,247 @@
+{% extends "applications/base_applications.html" %}
+
+{% block title %}Application Details{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <div id="applicationLoader" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading application details...</p>
+    </div>
+    
+    <div id="applicationError" class="alert alert-danger" style="display: none;">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <span id="errorMessage">Error loading application details.</span>
+    </div>
+    
+    <div id="applicationContent" style="display: none;">
+        <!-- Application Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 id="jobTitle" class="mb-0"><i class="fas fa-briefcase me-2"></i>Job Application</h2>
+            <span id="applicationStatus" class="badge bg-warning">Pending</span>
+        </div>
+        
+        <!-- Company and Job Info Card -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-building me-2"></i><span id="companyName">Company Name</span></h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Location:</strong> <span id="jobLocation"></span></p>
+                        <p><strong>Salary:</strong> <span id="jobSalary"></span></p>
+                        <p><strong>Posted on:</strong> <span id="jobCreatedAt"></span></p>
+                        <p><strong>Status:</strong> <span id="jobStatus"></span></p>
+                        <p><strong>Total Applicants:</strong> <span id="totalApplicants"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Applied on:</strong> <span id="appliedAt"></span></p>
+                        <p><strong>Last updated:</strong> <span id="updatedAt"></span></p>
+                        <p id="resumeSection">
+                            <strong>Resume:</strong> 
+                            <a id="resumeLink" href="#" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-download me-1"></i>Download Resume
+                            </a>
+                            <div id="urlData" style="display: none;"
+                                data-download-resume-url="{{ url_for('applications.download_resume', file_name='FILENAME_PLACEHOLDER') }}">
+                            </div>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Job Description -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-align-left me-2"></i>Job Description</h5>
+            </div>
+            <div class="card-body">
+                <div id="jobDescription" class="job-description-container"></div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons - Only for companies -->
+        <div id="companyActions" class="mb-4" style="display: none;">
+            <h5 class="mb-3"><i class="fas fa-tasks me-2"></i>Manage Application</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-success" onclick="updateApplicationStatus('{{ application_id }}', 'accepted')">
+                    <i class="fas fa-check me-2"></i>Accept Application
+                </button>
+                <button class="btn btn-primary" onclick="updateApplicationStatus('{{ application_id }}', 'under_review')">
+                    <i class="fas fa-search me-2"></i>Mark Under Review
+                </button>
+                <button class="btn btn-danger" onclick="updateApplicationStatus('{{ application_id }}', 'rejected')">
+                    <i class="fas fa-times me-2"></i>Reject Application
+                </button>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="mb-4">
+            <a href="{{ url_for('frontend.applications_page') if current_user.user_type == 'person' else url_for('frontend.applicants') }}" 
+               class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Applications
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Application Status Update Modal (same as in applicants.html) -->
+<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateStatusModalLabel">Update Application Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateStatusForm" action="{{ url_for('applications.update_status') }}" method="POST">
+                    <input type="hidden" id="statusApplicationId" name="applicationId">
+                    <input type="hidden" id="newStatus" name="status">
+                    
+                    <div class="mb-3">
+                        <p>Are you sure you want to change the status of this application to <strong id="statusLabel"></strong>?</p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="updateStatusForm" class="btn btn-primary">Update Status</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Status color mapping
+    const statusColors = {
+        'pending': 'warning',
+        'rejected': 'danger',
+        'accepted': 'success',
+        'under_review': 'info'
+    };
+    
+    // Load application details when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('{{ application_id }}');
+        loadApplicationDetails('{{ application_id }}');
+    });
+    
+    // Function to load application details
+    function loadApplicationDetails(applicationId) {
+        // Use absolute path starting with / to ensure it's from site root
+        fetch(`/applications/application/detail/${applicationId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to load application details');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loader, show content
+            document.getElementById('applicationLoader').style.display = 'none';
+            document.getElementById('applicationContent').style.display = 'block';
+            
+            // Populate data
+            populateApplicationData(data);
+        })
+        .catch(error => {
+            // Show error message
+            document.getElementById('applicationLoader').style.display = 'none';
+            document.getElementById('applicationError').style.display = 'block';
+            document.getElementById('errorMessage').textContent = error.message;
+            console.error('Error loading application:', error);
+        });
+    }
+    
+    // Function to populate the application data
+    function populateApplicationData(data) {
+        // Set page title
+        document.getElementById('jobTitle').textContent = data.job_title;
+        
+        // Set application status with appropriate color
+        const statusBadge = document.getElementById('applicationStatus');
+        statusBadge.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+        statusBadge.className = `badge bg-${statusColors[data.status.toLowerCase()] || 'secondary'}`;
+        
+        // Set company and job details
+        document.getElementById('companyName').textContent = data.company_name;
+        document.getElementById('jobLocation').textContent = data.job_location;
+        document.getElementById('jobSalary').textContent = data.job_salary || 'Not specified';
+        document.getElementById('jobCreatedAt').textContent = formatDate(data.job_created_at);
+        
+        // Set job status
+        const jobStatusEl = document.getElementById('jobStatus');
+        jobStatusEl.textContent = data.job_is_active ? 'Active' : 'Inactive';
+        jobStatusEl.className = data.job_is_active ? 'text-success' : 'text-danger';
+        
+        // Set applicant details
+        document.getElementById('totalApplicants').textContent = data.total_applicants;
+        document.getElementById('appliedAt').textContent = formatDate(data.applied_at);
+        document.getElementById('updatedAt').textContent = formatDate(data.updated_at);
+        
+        // Handle resume
+        const resumeSection = document.getElementById('resumeSection');
+        const resumeLink = document.getElementById('resumeLink');
+        
+        if (data.resume_filename) {
+            // Get URL template from the data attribute and replace placeholder
+            const urlTemplate = document.getElementById('urlData')
+                .getAttribute('data-download-resume-url');
+            const downloadUrl = urlTemplate.replace('FILENAME_PLACEHOLDER', data.resume_filename);
+            
+            resumeLink.href = downloadUrl;
+            resumeLink.textContent = data.resume_filename;
+            resumeLink.style.display = 'inline-block';
+        } else {
+            resumeSection.innerHTML = '<strong>Resume:</strong> <span class="text-danger">No resume attached</span>';
+        }
+        
+        // Set job description (with HTML content)
+        document.getElementById('jobDescription').innerHTML = data.job_description;
+        
+        // Show company actions if user is a company
+        if ('{{ current_user.user_type }}' === 'company') {
+            document.getElementById('companyActions').style.display = 'block';
+        }
+    }
+    
+    // Function to format date strings
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        
+        // Split the datetime string
+        const parts = dateString.split(' ');
+        return parts[0]; // Return just the date part
+    }
+    
+    // Function to handle application status updates (same as in applicants.html)
+    function updateApplicationStatus(applicationId, status) {
+        document.getElementById('statusApplicationId').value = applicationId;
+        document.getElementById('newStatus').value = status;
+        
+        // Set status label text
+        let statusText = status.replace('_', ' ');
+        statusText = statusText.charAt(0).toUpperCase() + statusText.slice(1);
+        document.getElementById('statusLabel').textContent = statusText;
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('updateStatusModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}

@@ -130,8 +130,93 @@ def applications_page():
     )
 
 
+#view applicants.html
+@frontend_bp.route("/applicants", methods=["GET"])
+@login_required
+def applicants():
+    # Check if current user is a Company
+    if not isinstance(current_user, Company):
+        flash("Only Companies can view applicants page!", "info")
+        return redirect(request.referrer or url_for('frontend.jobs'))
+    
+    # Get and sanitize parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search_term = request.args.get('search', '').strip()
+    
+    # Debug logging
+    print("=== Applicants Search Debug ===")
+    print(f"Company ID: {current_user.id}")
+    print(f"Search term: '{search_term}'")
+    print(f"Page: {page}, Per_page: {per_page}")
+    
+    # Base query for jobs posted by current company
+    base_query = Job.query.filter_by(company_id=current_user.id)
+    
+    # Apply search filter if provided
+    if search_term:
+        base_query = base_query.filter(Job.title.ilike(f"%{search_term}%"))
+    
+    # Order by creation date (most recent first)
+    base_query = base_query.order_by(Job.created_at.desc())
+    
+    # Check if company has any jobs
+    jobs_count = base_query.count()
+    print(f"Jobs found: {jobs_count}")
+    
+    if jobs_count == 0:
+        flash("You haven't posted any jobs yet!", "info")
+        return render_template(
+            "applications/applicants.html", 
+            jobs=[],
+            user=current_user
+        )
+    
+    # Paginate the results
+    jobs_pagination = base_query.paginate(page=page, per_page=per_page, error_out=False)
+    
+    # Process each job to include its applications
+    jobs_with_applications = []
+    for job in jobs_pagination.items:
+        applications = JobApplication.query\
+            .filter_by(job_id=job.id)\
+            .join(Person, JobApplication.applicant_id == Person.id)\
+            .all()
+        
+        # Debug info for applications
+        print(f"Job {job.id} ({job.title}) has {len(applications)} applications")
+        
+        job_data = {
+            "job": job,
+            "applications": applications,
+            "application_count": len(applications)
+        }
+        
+        jobs_with_applications.append(job_data)
+    
+    return render_template(
+        "applications/applicants.html",
+        jobs=jobs_with_applications,
+        pagination=jobs_pagination,
+        search_query=search_term,
+        total_count=jobs_pagination.total,
+        user=current_user
+    )
+
+
+# show a single job details
+@frontend_bp.route("/applications/view/<int:application_id>")
+@login_required
+def view_application(application_id):
+    # Show the application page - data will be loaded via AJAX
+    return render_template(
+        "jobs/job.html",
+        application_id=application_id,
+        user=current_user
+    )
+
 # Profile
-@frontend_bp.route("/profile")
+@frontend_bp.route("/profile",methods=["GET"])
 @login_required
 def profile():
     user_data = {
@@ -220,7 +305,7 @@ def profile():
 
 
 # Notifications
-@frontend_bp.route("/notifications")
+@frontend_bp.route("/notifications",methods=["GET"])
 @login_required
 def notifications():
     requested_page = request.args.get('page', 1, type=int)
@@ -251,7 +336,7 @@ def notifications():
     )
 
 # Messages
-@frontend_bp.route("/rooms")
+@frontend_bp.route("/rooms",methods=["GET"])
 @login_required
 def rooms():
     requested_page = request.args.get('page', 1, type=int)
