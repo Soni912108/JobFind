@@ -197,6 +197,10 @@ def apply_job(job_id):
     if not isinstance(current_user, Person) or not current_user.can_apply_to_job():
         return jsonify({"error": "Only Professionals can apply for jobs."}), 409
 
+    #check if a file is provided in the request object
+    if 'resume' not in request.files:
+            return jsonify({"error": "Resume file not provided"}), 500
+    
     # Check if already applied
     already_applied = JobApplication.query.filter_by(
         job_id=job.id,
@@ -208,7 +212,7 @@ def apply_job(job_id):
     
     if already_applied is not None:
         return jsonify({"error": "You have already applied for this job"}), 409
-
+    
     try:
         # Add application with timestamp
         application = JobApplication(
@@ -216,13 +220,12 @@ def apply_job(job_id):
             job_id=job_id,
             applied_at=datetime.now()
         )
-
-        if 'resume' in request.files:
-            unique_filename, file_url = save_resume(request.files.get('resume'))
-            print(f"In JOBS: Saved file as {unique_filename}, URL: {file_url}")
-            if unique_filename:
-                application.resume_filename = unique_filename
         
+        unique_filename, file_url = save_resume(request.files.get('resume'))
+        print(f"In JOBS: Saved file as {unique_filename}, URL: {file_url}")
+        if unique_filename:
+            application.resume_filename = unique_filename
+    
         db.session.add(application)
         db.session.commit()
 

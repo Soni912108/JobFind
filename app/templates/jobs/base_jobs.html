@@ -447,7 +447,10 @@
         });
 
         let file = await resumeUploadPromise; // file will be a File object or null
-
+        if (!file) {
+            showToast("Please upload a resume to apply for this job.", true);
+            return;
+        }
         // Create FormData object to send both job_id and the resume file (if provided)
         const formData = new FormData();
         formData.append('job_id', jobId);

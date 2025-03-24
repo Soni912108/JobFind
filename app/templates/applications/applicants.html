@@ -104,7 +104,13 @@
                                         <tbody>
                                             {% for application in job_data.applications %}
                                                 <tr>
-                                                    <td>{{ application.applicant.name }} {{ application.applicant.surname }}</td>
+                                                    <td>
+                                                        <a href="{{ url_for('profiles.visit_profile', user_id=application.applicant.id) }}" 
+                                                           class="text-decoration-none text-dark">
+                                                            {{ application.applicant.name }} {{ application.applicant.surname }}
+                                                            <i class="fas fa-external-link-alt ms-1 small text-primary"></i>
+                                                        </a>
+                                                    </td>
                                                     <td>
                                                         <a href="mailto:{{ application.applicant.email }}" class="text-decoration-none">
                                                             {{ application.applicant.email }}

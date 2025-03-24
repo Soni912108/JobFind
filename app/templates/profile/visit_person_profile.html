@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ user_data.name }}'s Profile{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <!-- Profile Header -->
+    <div class="profile-header p-4 mb-4 shadow-sm">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                    <i class="fas fa-user fa-2x text-primary"></i>
+                </div>
+            </div>
+            <div class="col">
+                <h2 class="mb-1">{{ user_data.name }} {{ user_data.surname }}</h2>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-map-marker-alt me-2"></i>{{ user_data.location or 'No location set' }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-4">
+            <!-- Contact Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Contact Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Email</small>
+                        <p class="mb-0">
+                            <a href="mailto:{{ user_data.email }}" class="text-decoration-none">
+                                {{ user_data.email }}
+                            </a>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Profession</small>
+                        <p class="mb-0">{{ user_data.profession or 'Not specified' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Skills</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_data.skills %}
+                        {% for skill in user_data.skills %}
+                        <span class="badge bg-primary me-2 mb-2">{{ skill }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">No skills listed</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-8">
+            <!-- Experience -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Experience</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_data.experience %}
+                        {% for exp in user_data.experience %}
+                        <div class="mb-3">
+                            <h6>{{ exp.title }}</h6>
+                            <p class="text-muted mb-1">{{ exp.company }}</p>
+                            <p class="mb-0">{{ exp.description }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">No experience listed</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Current Company Info -->
+            {% if user_data.current_company_info %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Current Position</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ user_data.current_company_info.title }}</h6>
+                    <p class="text-muted mb-1">{{ user_data.current_company_info.company }}</p>
+                    <p class="mb-0">{{ user_data.current_company_info.description }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
