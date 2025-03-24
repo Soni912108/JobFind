@@ -30,9 +30,10 @@
     </div>
 </div>
 
+
 <!-- Edit Profile Modal -->
 <div class="modal fade" id="editProfileModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Edit Profile</h5>
@@ -40,74 +41,82 @@
             </div>
             <div class="modal-body">
                 <form id="editProfileForm">
+                    <!-- Common Fields -->
                     <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" value="{{ user_data.name }}">
+                        <label class="form-label">Name*</label>
+                        <input type="text" name="name" class="form-control" value="{{ user_data.name }}" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Location</label>
-                        <input type="text" class="form-control" value="{{ user_data.location }}">
+                        <input type="text" name="location" class="form-control" value="{{ user_data.location }}">
                     </div>
+
                     {% if is_person %}
-                        <div class="mb-3">
-                            <label class="form-label">Profession</label>
-                            <input type="text" class="form-control" value="{{ user_data.profession }}">
+                    <!-- Person-specific fields -->
+                    <div class="mb-3">
+                        <label class="form-label">Surname*</label>
+                        <input type="text" name="surname" class="form-control" value="{{ user_data.surname }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Profession</label>
+                        <input type="text" name="profession" class="form-control" value="{{ user_data.profession }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Skills (comma-separated)</label>
+                        <input type="text" name="skills" class="form-control" 
+                               value="{{ user_data.skills|join(', ') if user_data.skills else '' }}"
+                               placeholder="e.g., Python, JavaScript, Project Management">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Company Information</label>
+                        <div class="card p-3">
+                            <div class="mb-2">
+                                <label class="form-label">Company Name</label>
+                                <input type="text" name="current_company" class="form-control" 
+                                       value="{{ user_data.current_company_info.company if user_data.current_company_info else '' }}">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Title</label>
+                                <input type="text" name="current_title" class="form-control"
+                                       value="{{ user_data.current_company_info.title if user_data.current_company_info else '' }}">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Description</label>
+                                <textarea name="current_description" class="form-control" rows="2">{{ user_data.current_company_info.description if user_data.current_company_info else '' }}</textarea>
+                            </div>
                         </div>
-                        {% if user_data.skills %}
-                            <div class="mb-3">
-                                <label class="form-label">Skills</label>
-                                <input type="text" class="form-control" value="{{ user_data.skills }}">
-                            </div>
-                        {% else %}
-                            <div class="mb-3">
-                                <label class="form-label">Skills</label>
-                                <input type="text" class="form-control" value="No Skills added">
-                            </div>
-                        {% endif %}
-                        {% if user_data.experience %}
-                            <div class="mb-3">
-                                <label class="form-label">Experience</label>
-                                <textarea class="form-control" rows="3">{{ user_data.experience }}</textarea>
-                            </div>
-                        {% else %}
-                        <div class="mb-3">
-                            <label class="form-label">Skills</label>
-                            <input type="text" class="form-control" value="No Experience added">
-                        </div>
-                        {% endif %}
-                        {% if user_data.current_company_info %}
-                            <div class="mb-3">
-                                <label class="form-label">Current Company Info</label>
-                                <textarea class="form-control" rows="3">{{ user_data.current_company_info }}</textarea>
-                            </div>
-                        {% else %}
-                            <div class="mb-3">
-                                <label class="form-label">Current Company Info</label>
-                                <textarea class="form-control" rows="3">No data</textarea>
-                            </div>
-                        {% endif %}
+                    </div>
                     {% elif is_company %}
-                        <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-control" rows="3">{{ user_data.description }}</textarea>
+                    <!-- Company-specific fields -->
+                    <div class="mb-3">
+                        <label class="form-label">Company Description</label>
+                        <textarea name="description" class="form-control" rows="4">{{ user_data.description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Social Links</label>
+                        <div class="card p-3" id="socialLinksContainer">
+                            {% if user_data.social_links %}
+                                {% for platform, link in user_data.social_links.items() %}
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" name="social_platform" value="{{ platform }}" placeholder="Platform">
+                                    <input type="url" class="form-control" name="social_url" value="{{ link }}" placeholder="URL">
+                                    <button type="button" class="btn btn-outline-danger" onclick="removeSocialLink(this)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
                         </div>
-                        {% if user_data.social_links %}
-                            <div class="mb-3">
-                                <label class="form-label">Social Links</label>
-                                <textarea class="form-control" rows="3">{{ user_data.social_links }}</textarea>
-                            </div>
-                        {% else %}
-                            <div class="mb-3">
-                                <label class="form-label">Social Links</label>
-                                <textarea class="form-control" rows="3">No data</textarea>
-                            </div>
-                        {% endif %}
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addSocialLink()">
+                            <i class="fas fa-plus"></i> Add Social Link
+                        </button>
+                    </div>
                     {% endif %}
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" form="editProfileForm" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-primary" onclick="saveProfile({{ 'true' if is_person else 'false' }}, {{ 'true' if is_company else 'false' }})">Save Changes</button>
             </div>
         </div>
     </div>
@@ -149,7 +158,13 @@
                                     {% for app in job.applications %}
                                     <tr>
                                         <td>{{ app.job.title }}</td>
-                                        <td>{{ app.applicant.name }} {{ app.applicant.surname }}</td>
+                                        <td>
+                                            <a href="{{ url_for('profiles.visit_profile', user_id=app.applicant.id) }}" 
+                                               class="text-decoration-none text-dark">
+                                                {{ app.applicant.name }} {{ app.applicant.surname }}
+                                                <i class="fas fa-external-link-alt ms-1 small text-primary"></i>
+                                            </a>
+                                        </td>
                                         <td>{{ app.applicant.profession }}</td>
                                         <td>
                                             <i class="fas fa-info-circle me-2 text-{{ status_colors.get(app.status.lower(), 'secondary') }}"></i>
@@ -220,6 +235,81 @@
         });
         bsToast.show();
     }
+
+    function addSocialLink() {
+        const container = document.getElementById('socialLinksContainer');
+        const newLink = `
+            <div class="input-group mb-2">
+                <input type="text" class="form-control" name="social_platform" placeholder="Platform">
+                <input type="url" class="form-control" name="social_url" placeholder="URL">
+                <button type="button" class="btn btn-outline-danger" onclick="removeSocialLink(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', newLink);
+    }
+
+    function removeSocialLink(button) {
+        button.closest('.input-group').remove();
+    }
+
+    function saveProfile(isCompany,isPerson) {
+        const form = document.getElementById('editProfileForm');
+        const formData = new FormData(form);
+        const data = {};
+
+        // Handle common fields
+        data.name = formData.get('name');
+        data.location = formData.get('location');
+
+        if (isPerson) {
+            // Handle Person-specific fields
+            data.surname = formData.get('surname');
+            data.profession = formData.get('profession');
+            // data.skills = if (formData.get('skills')) {formData.get('skills').split(',').map(s => s.trim()).filter(s => s)};
+            data.current_company_info = {
+                company: formData.get('current_company'),
+                title: formData.get('current_title'),
+                description: formData.get('current_description')
+            };
+        }
+        if (isCompany) {
+            // Handle Company-specific fields
+            data.description = formData.get('description');
+            // Handle social links
+            data.social_links = {};
+            const platforms = form.querySelectorAll('[name="social_platform"]');
+            const urls = form.querySelectorAll('[name="social_url"]');
+            platforms.forEach((platform, index) => {
+                if (platform.value && urls[index].value) {
+                    data.social_links[platform.value] = urls[index].value;
+                }
+            });
+        }
+        // Send the data to the server
+        fetch(`/profile/edit/{{ user_data.id }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast(data.message);
+                location.reload(); // Reload to show updated data
+            } else {
+                showToast(data.message, true);
+            }
+        })
+        .catch(error => {
+            showToast('An error occurred while updating the profile', true);
+        });
+    }
+
+
     // to show the notifications with bootstrap
     function showConfirmation(message) {
         return new Promise((resolve) => {
