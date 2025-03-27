@@ -44,7 +44,7 @@ def visit_profile(user_id):
             'social_links': user.social_links or {}
         })
         template = 'profile/visit_company_profile.html'
-    
+    print(user_data)
     return render_template(
         template,
         user=current_user,
@@ -54,11 +54,10 @@ def visit_profile(user_id):
     )
 
 
-# edit profile
-@profiles_bp.route("/edit/<int:user_id>", methods=["POST"])
+# 1. Basic Profile Edit (shared data)
+@profiles_bp.route("/edit/basic/<int:user_id>", methods=["POST"])
 @login_required
-def edit_profile(user_id):
-    # Only allow users to edit their own profile
+def edit_basic_profile(user_id):
     if user_id != current_user.id:
         return jsonify({
             'status': 'error',
@@ -74,60 +73,105 @@ def edit_profile(user_id):
             user.name = data['name']
         if 'location' in data:
             user.location = data['location']
+        if 'email' in data:
+            user.email = data['email']
             
-        # Update type-specific fields
-        if isinstance(user, Person):
-            if 'surname' in data:
-                user.surname = data['surname']
-            if 'profession' in data:
-                user.profession = data['profession']
-            if 'skills' in data:
-                # Ensure skills is a list
-                user.skills = data['skills'] if isinstance(data['skills'], list) else []
-            if 'experience' in data:
-                # Ensure experience is a list of dictionaries
-                if isinstance(data['experience'], list):
-                    user.experience = [
-                        {
-                            'title': exp.get('title', ''),
-                            'company': exp.get('company', ''),
-                            'description': exp.get('description', ''),
-                            'start_date': exp.get('start_date', ''),
-                            'end_date': exp.get('end_date', '')
-                        }
-                        for exp in data['experience']
-                    ]
-            if 'current_company_info' in data:
-                # Ensure it's a dictionary with required fields
-                if isinstance(data['current_company_info'], dict):
-                    user.current_company_info = {
-                        'company': data['current_company_info'].get('company', ''),
-                        'title': data['current_company_info'].get('title', ''),
-                        'description': data['current_company_info'].get('description', '')
-                    }
-                    
-        elif isinstance(user, Company):
-            if 'description' in data:
-                user.description = data['description']
-            if 'social_links' in data:
-                # Ensure social_links is a dictionary
-                if isinstance(data['social_links'], dict):
-                    user.social_links = data['social_links']
-        
-        # Update the updated_at timestamp
+        # Person-specific basic fields
+        if isinstance(user, Person) and 'surname' in data:
+            user.surname = data['surname']
+        if isinstance(user, Person) and 'profession' in data:
+            user.profession = data['profession']
+            
         user.updated_at = datetime.now()
-        
-        # Commit changes
         db.session.commit()
         
         return jsonify({
             'status': 'success',
-            'message': 'Profile updated successfully'
+            'message': 'Basic profile information updated successfully'
         })
         
     except Exception as e:
         db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# 2. Company Social Links
+@profiles_bp.route("/edit/social-links/<int:user_id>", methods=["POST"])
+@login_required
+def edit_social_links(user_id):
+    if user_id != current_user.id or not isinstance(current_user, Company):
         return jsonify({
             'status': 'error',
-            'message': str(e)
-        }), 500
+            'message': 'Unauthorized access'
+        }), 403
+    
+    try:
+        data = request.json
+        company = Company.query.get_or_404(user_id)
+        
+        if 'social_links' in data and isinstance(data['social_links'], dict):
+            company.social_links = data['social_links']
+            company.updated_at = datetime.now()
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Social links updated successfully'
+            })
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# 3. Person Professional Info
+@profiles_bp.route("/edit/professional/<int:user_id>", methods=["POST"])
+@login_required
+def edit_professional_info(user_id):
+    if user_id != current_user.id or not isinstance(current_user, Person):
+        return jsonify({
+            'status': 'error',
+            'message': 'Unauthorized access'
+        }), 403
+    
+    try:
+        data = request.json
+        person = Person.query.get_or_404(user_id)
+        
+        # Handle skills update
+        if 'skills' in data:
+            if isinstance(data['skills'], list):
+                person.skills = data['skills']
+        
+        # Handle experience update
+        if 'experience' in data:
+            if isinstance(data['experience'], list):
+                person.experience = [
+                    {
+                        'title': exp.get('title', ''),
+                        'company': exp.get('company', ''),
+                        'description': exp.get('description', ''),
+                        'start_date': exp.get('start_date', ''),
+                        'end_date': exp.get('end_date', '')
+                    }
+                    for exp in data['experience']
+                ]
+        
+        # Handle current company info update
+        if 'current_company_info' in data:
+            if isinstance(data['current_company_info'], dict):
+                person.current_company_info = {
+                    'company': data['current_company_info'].get('company', ''),
+                    'title': data['current_company_info'].get('title', ''),
+                    'description': data['current_company_info'].get('description', '')
+                }
+        
+        person.updated_at = datetime.now()
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Professional information updated successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500

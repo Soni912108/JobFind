@@ -31,98 +31,6 @@
 </div>
 
 
-<!-- Edit Profile Modal -->
-<div class="modal fade" id="editProfileModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Profile</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="editProfileForm">
-                    <!-- Common Fields -->
-                    <div class="mb-3">
-                        <label class="form-label">Name*</label>
-                        <input type="text" name="name" class="form-control" value="{{ user_data.name }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Location</label>
-                        <input type="text" name="location" class="form-control" value="{{ user_data.location }}">
-                    </div>
-
-                    {% if is_person %}
-                    <!-- Person-specific fields -->
-                    <div class="mb-3">
-                        <label class="form-label">Surname*</label>
-                        <input type="text" name="surname" class="form-control" value="{{ user_data.surname }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Profession</label>
-                        <input type="text" name="profession" class="form-control" value="{{ user_data.profession }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Skills (comma-separated)</label>
-                        <input type="text" name="skills" class="form-control" 
-                               value="{{ user_data.skills|join(', ') if user_data.skills else '' }}"
-                               placeholder="e.g., Python, JavaScript, Project Management">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Current Company Information</label>
-                        <div class="card p-3">
-                            <div class="mb-2">
-                                <label class="form-label">Company Name</label>
-                                <input type="text" name="current_company" class="form-control" 
-                                       value="{{ user_data.current_company_info.company if user_data.current_company_info else '' }}">
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Title</label>
-                                <input type="text" name="current_title" class="form-control"
-                                       value="{{ user_data.current_company_info.title if user_data.current_company_info else '' }}">
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Description</label>
-                                <textarea name="current_description" class="form-control" rows="2">{{ user_data.current_company_info.description if user_data.current_company_info else '' }}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                    {% elif is_company %}
-                    <!-- Company-specific fields -->
-                    <div class="mb-3">
-                        <label class="form-label">Company Description</label>
-                        <textarea name="description" class="form-control" rows="4">{{ user_data.description }}</textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Social Links</label>
-                        <div class="card p-3" id="socialLinksContainer">
-                            {% if user_data.social_links %}
-                                {% for platform, link in user_data.social_links.items() %}
-                                <div class="input-group mb-2">
-                                    <input type="text" class="form-control" name="social_platform" value="{{ platform }}" placeholder="Platform">
-                                    <input type="url" class="form-control" name="social_url" value="{{ link }}" placeholder="URL">
-                                    <button type="button" class="btn btn-outline-danger" onclick="removeSocialLink(this)">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addSocialLink()">
-                            <i class="fas fa-plus"></i> Add Social Link
-                        </button>
-                    </div>
-                    {% endif %}
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveProfile({{ 'true' if is_person else 'false' }}, {{ 'true' if is_company else 'false' }})">Save Changes</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
 <!-- Applicant Modals - One for each job -->
 {% if user_data and user_data.recent_jobs %}
     {% for job in user_data.recent_jobs %}
@@ -200,6 +108,200 @@
     {% endfor %}
 {% endif %}
 
+<!-- 1. Basic Profile Edit Modal -->
+<div class="modal fade" id="editBasicProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Basic Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editBasicProfileForm">
+                    <div class="mb-3">
+                        <label class="form-label">Name*</label>
+                        <input type="text" name="name" class="form-control" value="{{ user_data.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email*</label>
+                        <input type="email" name="email" class="form-control" value="{{ user_data.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Location</label>
+                        <input type="text" name="location" class="form-control" value="{{ user_data.location }}">
+                    </div>
+                    {% if is_person %}
+                    <div class="mb-3">
+                        <label class="form-label">Surname*</label>
+                        <input type="text" name="surname" class="form-control" value="{{ user_data.surname }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Profession</label>
+                        <input type="text" name="profession" class="form-control" value="{{ user_data.profession }}">
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveBasicProfile({{ 'true' if is_person else 'false' }})">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Social Links Modal (Companies only) -->
+{% if is_company %}
+<div class="modal fade" id="editSocialLinksModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Social Links</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editSocialLinksForm">
+                    <div id="socialLinksContainer">
+                        {% if user_data.social_links %}
+                            {% for platform, link in user_data.social_links.items() %}
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" name="social_platform[]" value="{{ platform }}" placeholder="Platform">
+                                <input type="url" class="form-control" name="social_url[]" value="{{ link }}" placeholder="URL">
+                                <button type="button" class="btn btn-outline-danger" onclick="removeSocialLink(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" name="social_platform[]" placeholder="Platform (e.g., LinkedIn)">
+                                <input type="url" class="form-control" name="social_url[]" placeholder="https://...">
+                                <button type="button" class="btn btn-outline-danger" onclick="removeSocialLink(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addSocialLink()">
+                        <i class="fas fa-plus"></i> Add Social Link
+                    </button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSocialLinks()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 3. Professional Info Modals (Persons only) -->
+{% if is_person %}
+<!-- Skills Modal -->
+<div class="modal fade" id="editSkillsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Skills</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editSkillsForm">
+                    <div class="mb-3">
+                        <label class="form-label">Skills (comma-separated)</label>
+                        <input type="text" name="skills" class="form-control" 
+                               value="{{ user_data.skills|join(', ') if user_data.skills else '' }}"
+                               placeholder="e.g., Python, JavaScript, Project Management">
+                        <small class="text-muted">Enter your skills separated by commas</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveProfessionalInfo('Skills')">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Experience Modal -->
+<div class="modal fade" id="editExperienceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Experience</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editExperienceForm">
+                    <div class="mb-3">
+                        <label class="form-label">Job Title*</label>
+                        <input type="text" name="title" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Company*</label>
+                        <input type="text" name="company" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" name="start_date" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">End Date</label>
+                            <input type="date" name="end_date" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveProfessionalInfo('Experience')">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current Company Modal -->
+<div class="modal fade" id="editCurrentCompanyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Current Company</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCurrentCompanyForm">
+                    <div class="mb-3">
+                        <label class="form-label">Company Name*</label>
+                        <input type="text" name="company" class="form-control" 
+                               value="{{ user_data.current_company_info.company if user_data.current_company_info else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Title*</label>
+                        <input type="text" name="title" class="form-control"
+                               value="{{ user_data.current_company_info.title if user_data.current_company_info else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3">{{ user_data.current_company_info.description if user_data.current_company_info else '' }}</textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveProfessionalInfo('CurrentCompany')">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 
@@ -235,25 +337,7 @@
         });
         bsToast.show();
     }
-
-    function addSocialLink() {
-        const container = document.getElementById('socialLinksContainer');
-        const newLink = `
-            <div class="input-group mb-2">
-                <input type="text" class="form-control" name="social_platform" placeholder="Platform">
-                <input type="url" class="form-control" name="social_url" placeholder="URL">
-                <button type="button" class="btn btn-outline-danger" onclick="removeSocialLink(this)">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', newLink);
-    }
-
-    function removeSocialLink(button) {
-        button.closest('.input-group').remove();
-    }
-
+    //old version of save profile
     function saveProfile(isCompany,isPerson) {
         const form = document.getElementById('editProfileForm');
         const formData = new FormData(form);
@@ -332,6 +416,130 @@
             modal._element.addEventListener('hidden.bs.modal', handleDismiss);
             
             modal.show();
+        });
+    }
+
+    // 1. Basic Profile Update
+    function saveBasicProfile(isPerson) {
+        const form = document.getElementById('editBasicProfileForm');
+        const formData = new FormData(form);
+        const data = {
+            name: formData.get('name'),
+            location: formData.get('location'),
+            email: formData.get('email')
+        };
+        
+        if (isPerson) {
+            data.surname = formData.get('surname');
+            data.profession = formData.get('profession');
+        }
+        
+        sendRequest('/profile/edit/basic/{{ user_data.id }}', data);
+    }
+
+    // 2. Social Links Update (Companies only)
+    function addSocialLink() {
+        const container = document.getElementById('socialLinksContainer');
+        if (!container) {
+            console.error('Social links container not found');
+            return;
+        }
+        
+        // Create a new div element for the input group
+        const newLink = document.createElement('div');
+        newLink.className = 'input-group mb-2';
+        
+        // Set innerHTML for the new input group
+        newLink.innerHTML = `
+            <input type="text" class="form-control" name="social_platform[]" placeholder="Platform (e.g., LinkedIn)">
+            <input type="url" class="form-control" name="social_url[]" placeholder="https://...">
+            <button type="button" class="btn btn-outline-danger" onclick="removeSocialLink(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        container.appendChild(newLink);
+    }
+
+    function removeSocialLink(button) {
+        const container = document.getElementById('socialLinksContainer');
+        const inputGroup = button.closest('.input-group');
+        
+        if (container.children.length > 1) {
+            inputGroup.remove();
+        } else {
+            // Clear the inputs instead of removing if it's the last one
+            inputGroup.querySelector('[name="social_platform[]"]').value = '';
+            inputGroup.querySelector('[name="social_url[]"]').value = '';
+        }
+    }
+
+    function saveSocialLinks() {
+        const form = document.getElementById('editSocialLinksForm');
+        const platforms = form.querySelectorAll('[name="social_platform[]"]');
+        const urls = form.querySelectorAll('[name="social_url[]"]');
+        const social_links = {};
+        
+        platforms.forEach((platform, index) => {
+            if (platform.value && urls[index].value) {
+                social_links[platform.value.trim()] = urls[index].value.trim();
+            }
+        });
+        
+        sendRequest('/profile/edit/social-links/{{ user_data.id }}', { social_links });
+    }
+
+    // 3. Professional Info Update (Persons only)
+    function saveProfessionalInfo(type) {
+        const form = document.getElementById(`edit${type}Form`);
+        const formData = new FormData(form);
+        const data = {};
+        
+        switch(type) {
+            case 'Skills':
+                data.skills = formData.get('skills').split(',').map(s => s.trim()).filter(s => s);
+                break;
+            case 'Experience':
+                data.experience = [{
+                    title: formData.get('title'),
+                    company: formData.get('company'),
+                    description: formData.get('description'),
+                    start_date: formData.get('start_date'),
+                    end_date: formData.get('end_date')
+                }];
+                break;
+            case 'CurrentCompany':
+                data.current_company_info = {
+                    company: formData.get('company'),
+                    title: formData.get('title'),
+                    description: formData.get('description')
+                };
+                break;
+        }
+        
+        sendRequest('/profile/edit/professional/{{ user_data.id }}', data);
+    }
+
+    // Helper function for sending requests
+    function sendRequest(url, data) {
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast(data.message);
+                location.reload();
+            } else {
+                showToast(data.message, true);
+            }
+        })
+        .catch(error => {
+            showToast('An error occurred while updating the profile', true);
         });
     }
 </script>

@@ -269,7 +269,8 @@ def profile():
         # Company-specific data
         user_data.update({
             'description': current_user.description,
-            
+            # Social links
+            'social_links': current_user.social_links,
             # Job statistics
             'total_jobs': Job.query.filter_by(company_id=current_user.id).count(),
             'active_jobs': Job.query.filter_by(
