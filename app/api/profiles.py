@@ -122,6 +122,8 @@ def edit_social_links(user_id):
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+# NOTE: need a function to add experiences
+
 # 3. Person Professional Info
 @profiles_bp.route("/edit/professional/<int:user_id>", methods=["POST"])
 @login_required
@@ -144,7 +146,8 @@ def edit_professional_info(user_id):
         # Handle experience update
         if 'experience' in data:
             if isinstance(data['experience'], list):
-                person.experience = [
+                # list comprehension 
+                all_experience = [
                     {
                         'title': exp.get('title', ''),
                         'company': exp.get('company', ''),
@@ -154,6 +157,8 @@ def edit_professional_info(user_id):
                     }
                     for exp in data['experience']
                 ]
+                print(f"All experiences: {all_experience}")
+                person.experience = all_experience
         
         # Handle current company info update
         if 'current_company_info' in data:

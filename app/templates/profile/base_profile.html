@@ -227,41 +227,72 @@
 
 <!-- Experience Modal -->
 <div class="modal fade" id="editExperienceModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add Experience</h5>
+                <h5 class="modal-title">Manage Experiences</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="editExperienceForm">
-                    <div class="mb-3">
-                        <label class="form-label">Job Title*</label>
-                        <input type="text" name="title" class="form-control" required>
+                    <div id="experienceContainer" class="accordion">
+                        {% if user_data.experience %}
+                            {% for exp in user_data.experience %}
+                            <div class="experience-entry accordion-item mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#experience-{{ loop.index }}">
+                                        <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                            <span>{{ exp.title }} at {{ exp.company }}</span>
+                                            <small class="text-muted">{{ exp.start_date }} - {{ exp.end_date }}</small>
+                                        </div>
+                                    </button>
+                                </h2>
+                                <div id="experience-{{ loop.index }}" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <div class="d-flex justify-content-end mb-2">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeExperience(this)">
+                                                <i class="fas fa-trash-alt"></i> Remove
+                                            </button>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Job Title*</label>
+                                                <input type="text" name="title[]" class="form-control" value="{{ exp.title }}" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Company*</label>
+                                                <input type="text" name="company[]" class="form-control" value="{{ exp.company }}" required>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="description[]" class="form-control" rows="2">{{ exp.description }}</textarea>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Start Date</label>
+                                                <input type="date" name="start_date[]" class="form-control" value="{{ exp.start_date }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">End Date</label>
+                                                <input type="date" name="end_date[]" class="form-control" value="{{ exp.end_date }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Company*</label>
-                        <input type="text" name="company" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea name="description" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Start Date</label>
-                            <input type="date" name="start_date" class="form-control">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">End Date</label>
-                            <input type="date" name="end_date" class="form-control">
-                        </div>
-                    </div>
+                    <button type="button" class="btn btn-outline-primary w-100 mt-3" onclick="addNewExperience()">
+                        <i class="fas fa-plus me-2"></i>Add Another Experience
+                    </button>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveProfessionalInfo('Experience')">Save Changes</button>
+                <button type="button" class="btn btn-primary" onclick="saveProfessionalInfo('Experience')">Save All Changes</button>
             </div>
         </div>
     </div>
@@ -500,13 +531,24 @@
                 data.skills = formData.get('skills').split(',').map(s => s.trim()).filter(s => s);
                 break;
             case 'Experience':
-                data.experience = [{
-                    title: formData.get('title'),
-                    company: formData.get('company'),
-                    description: formData.get('description'),
-                    start_date: formData.get('start_date'),
-                    end_date: formData.get('end_date')
-                }];
+                const titles = form.querySelectorAll('[name="title[]"]');
+                const companies = form.querySelectorAll('[name="company[]"]');
+                const descriptions = form.querySelectorAll('[name="description[]"]');
+                const startDates = form.querySelectorAll('[name="start_date[]"]');
+                const endDates = form.querySelectorAll('[name="end_date[]"]');
+                
+                data.experience = [];
+                titles.forEach((_, index) => {
+                    if (titles[index].value && companies[index].value) {
+                        data.experience.push({
+                            title: titles[index].value,
+                            company: companies[index].value,
+                            description: descriptions[index].value,
+                            start_date: startDates[index].value,
+                            end_date: endDates[index].value
+                        });
+                    }
+                });
                 break;
             case 'CurrentCompany':
                 data.current_company_info = {
@@ -542,6 +584,87 @@
             showToast('An error occurred while updating the profile', true);
         });
     }
+
+    function addNewExperience() {
+        const container = document.getElementById('experienceContainer');
+        const newExp = document.createElement('div');
+        const expIndex = container.children.length + 1;
+        newExp.className = 'experience-entry accordion-item mb-2';
+        
+        newExp.innerHTML = `
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                        data-bs-target="#experience-new-${expIndex}">
+                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                        <span>New Experience</span>
+                    </div>
+                </button>
+            </h2>
+            <div id="experience-new-${expIndex}" class="accordion-collapse collapse show">
+                <div class="accordion-body">
+                    <div class="d-flex justify-content-end mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeExperience(this)">
+                            <i class="fas fa-trash-alt"></i> Remove
+                        </button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Job Title*</label>
+                            <input type="text" name="title[]" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Company*</label>
+                            <input type="text" name="company[]" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description[]" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" name="start_date[]" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">End Date</label>
+                            <input type="date" name="end_date[]" class="form-control">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(newExp);
+    }
+
+    function removeExperience(button) {
+        const container = document.getElementById('experienceContainer');
+        const expEntry = button.closest('.experience-entry');
+        
+        if (container.children.length > 1) {
+            expEntry.remove();
+        } else {
+            // Clear the inputs instead of removing if it's the last one
+            expEntry.querySelectorAll('input, textarea').forEach(input => input.value = '');
+        }
+    }
+    // to toggle the job description
+    function toggleDescription(descId) {
+        const desc = document.getElementById(descId);
+        const btn = desc.nextElementSibling;
+        
+        if (!desc || !btn) return;
+        
+        if (desc.classList.contains('expanded')) {
+            desc.classList.remove('expanded');
+            btn.textContent = 'See more';
+        } else {
+            desc.classList.add('expanded');
+            btn.textContent = 'See less';
+        }
+    }
+
 </script>
 
 {% endblock %}
