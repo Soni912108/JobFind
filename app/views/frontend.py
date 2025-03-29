@@ -293,7 +293,6 @@ def profile():
     
     print(f"User is Company: {isinstance(current_user, Company)}")
     print(f"User is Person: {isinstance(current_user, Person)}")
-    print(f"User data: {user_data}")
 
     return render_template(
         "profile/profile.html",
