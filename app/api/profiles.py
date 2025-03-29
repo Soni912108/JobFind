@@ -56,7 +56,7 @@ def visit_profile(user_id):
     )
 
 
-
+# showing all experiences of a user(for user and visitors)
 @profiles_bp.route("/experiences/<int:user_id>", methods=["GET"])
 @login_required
 def all_experiences(user_id):
