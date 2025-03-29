@@ -21,6 +21,7 @@ def visit_profile(user_id):
     
     # Prepare the base user data
     user_data = {
+        'id': user.id,
         'name': user.name,
         'email': user.email,
         'location': user.location or 'No location set',
@@ -52,6 +53,27 @@ def visit_profile(user_id):
         is_person=isinstance(user, Person),
         is_company=isinstance(user, Company)
     )
+
+
+
+@profiles_bp.route("/experiences/<int:user_id>", methods=["GET"])
+@login_required
+def all_experiences(user_id):
+
+    user = User.query.get_or_404(user_id)
+    
+    user_data = {
+        'id': user.id,
+        'name': user.name,
+        'experience': user.experience or []
+    }
+    
+    return render_template(
+        'profile/all_experience.html',
+        user=current_user,
+        user_data=user_data
+    )
+
 
 
 # 1. Basic Profile Edit (shared data)

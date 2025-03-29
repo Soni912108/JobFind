@@ -2,6 +2,53 @@
 
 {% block title %}{{ user_data.name }}'s Profile{% endblock %}
 
+{% block head %}
+<style>
+    .description-container {
+        margin-top: 0.5rem;
+    }
+
+    .description-preview {
+        margin-bottom: 0.25rem;
+    }
+
+    .see-more-link {
+        color: #0d6efd;
+        text-decoration: none;
+        font-size: 0.875rem;
+        cursor: pointer;
+    }
+
+    .see-more-link:hover {
+        text-decoration: underline;
+    }
+
+    .modal-lg {
+        max-width: 800px;
+    }
+
+    .description-textarea {
+        background-color: #fff;
+        border: 1px solid rgba(0,0,0,0.1);
+        resize: none;
+        font-size: 1rem;
+        line-height: 1.6;
+        padding: 1rem;
+        min-height: 300px;
+    }
+
+    .description-textarea:focus {
+        box-shadow: none;
+        border-color: rgba(0,0,0,0.1);
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+</style>
+{% endblock %}
+
 {% block body %}
 <div class="container py-5">
     <!-- Profile Header -->
@@ -69,13 +116,43 @@
                 <div class="card-header">
                     <h5 class="card-title mb-0">Experience</h5>
                 </div>
+                {% if user_data.experience|length > 3 %}
+                    <a href="{{ url_for('profiles.all_experiences', user_id=user_data.id) }}" class="btn btn-sm btn-link text-primary me-2">
+                        <i class="fas fa-list-ul me-1"></i>View All ({{ user_data.experience|length }})
+                    </a>
+                {% endif %}
                 <div class="card-body">
                     {% if user_data.experience %}
-                        {% for exp in user_data.experience %}
+                    {% for exp in user_data.experience[:3] %}  <!-- Show only first 3 experiences -->
                         <div class="mb-3">
                             <h6>{{ exp.title }}</h6>
                             <p class="text-muted mb-1">{{ exp.company }}</p>
-                            <p class="mb-0">{{ exp.description }}</p>
+                            <div class="description-container">
+                                <div class="description-preview">
+                                    {{ exp.description[:500] }}{% if exp.description|length > 500 %}...{% endif %}
+                                </div>
+                                {% if exp.description|length > 500 %}
+                                    <a href="#" class="see-more-link" data-bs-toggle="modal" data-bs-target="#descriptionModal{{ loop.index }}">See more</a>
+                                    
+                                    <!-- Modal for this experience -->
+                                    <div class="modal fade" id="descriptionModal{{ loop.index }}" tabindex="-1" aria-labelledby="descriptionModalLabel{{ loop.index }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="descriptionModalLabel{{ loop.index }}">{{ exp.title }} - Full Description</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <textarea class="form-control description-textarea" readonly rows="12">{{ exp.description }}</textarea>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
                         {% endfor %}
                     {% else %}

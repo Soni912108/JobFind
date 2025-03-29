@@ -1,0 +1,208 @@
+{% extends 'profile/base_profile.html' %}
+
+{% block head %}
+<style>
+    .experience-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+
+    .timeline-full {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 2rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid rgba(13, 110, 253, 0.1);
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 0;
+        margin-bottom: 0;
+        border-bottom: none;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: #0d6efd;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #0d6efd;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -23px;
+        top: 15px;
+        height: calc(100% - 15px);
+        width: 2px;
+        background: #0d6efd;
+        opacity: 0.2;
+    }
+
+    .timeline-content {
+        background: #fff;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 0 15px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        border-left: 3px solid #0d6efd;
+    }
+
+    .timeline-content:hover {
+        transform: translateX(5px);
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+
+    .position-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(13, 110, 253, 0.1);
+        border-radius: 50%;
+    }
+
+    .position-icon i {
+        font-size: 1.2rem;
+    }
+
+    .company-info {
+        font-size: 1rem;
+        margin-top: 0.25rem;
+    }
+
+    .date-badge {
+        font-size: 0.9rem;
+    }
+
+    .description-container {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px dashed rgba(0,0,0,0.1);
+    }
+
+    .description-preview {
+        background: rgba(248, 249, 250, 0.5);
+        padding: 1rem;
+        border-radius: 0.25rem;
+        font-size: 0.95rem;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .back-button {
+        transition: all 0.3s ease;
+    }
+
+    .back-button:hover {
+        transform: translateX(-5px);
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="experience-header p-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1">Professional Experience</h2> 
+                <p class="text-muted mb-0">{{ user_data.name }}'s complete work history</p>
+            </div>
+            {% if user_data.id == current_user.id %}
+                <a href="{{ url_for('frontend.profile') }}" class="btn btn-outline-primary back-button">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                </a>
+            {% else %}
+            <a href="{{ url_for('profiles.visit_profile', user_id=user_data.id) }}" class="btn btn-outline-primary back-button">
+                <i class="fas fa-arrow-left me-2"></i>Back to Profile
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Experience Timeline -->
+    <div class="card">
+        <div class="card-body p-4">
+            {% if user_data.experience %}
+                <div class="timeline-full">
+                    {% for exp in user_data.experience %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="position-icon me-3">
+                                    <i class="fas fa-briefcase text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-0 fw-bold">{{ exp.title }}</h5>
+                                    <div class="company-info">
+                                        <i class="fas fa-building text-muted me-1"></i>
+                                        <span class="text-primary">{{ exp.company }}</span>
+                                    </div>
+                                </div>
+                                <div class="date-badge">
+                                    <span class="badge bg-light text-dark border px-3 py-2">
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        {{ exp.start_date }} - {{ exp.end_date or 'Present' }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% if exp.description %}
+                                <div class="description-container">
+                                    <div class="description-preview">
+                                        <i class="fas fa-tasks text-muted me-2"></i>
+                                        {{ exp.description[:100] }}
+                                        {% if exp.description|length > 100 %}
+                                            <a href="#" class="see-more-link ms-2" data-bs-toggle="modal" data-bs-target="#descriptionModal{{ loop.index }}">
+                                                <i class="fas fa-eye me-1"></i>See full description
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Modal for this experience -->
+                                <div class="modal fade" id="descriptionModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">
+                                                    <i class="fas fa-briefcase me-2"></i>
+                                                    {{ exp.title }} at {{ exp.company }}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <textarea class="form-control description-textarea" readonly rows="12">{{ exp.description }}</textarea>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-briefcase text-muted mb-3" style="font-size: 3rem;"></i>
+                    <h4 class="text-muted">No experience entries found</h4>
+                    <p class="text-muted mb-0">Start adding your professional experience to build your timeline.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

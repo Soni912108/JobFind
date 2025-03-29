@@ -75,10 +75,24 @@
     .timeline {
         position: relative;
         padding-left: 30px;
-        max-height: 400px;
+        max-height: 50px;
         overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #0d6efd #f8f9fa;
+    }
+    /* Custom scrollbar styling for Webkit browsers */
+    .timeline::-webkit-scrollbar {
+        width: 6px;
     }
 
+    .timeline::-webkit-scrollbar-track {
+        background: #f8f9fa;
+        border-radius: 3px;
+    }
+
+    .timeline::-webkit-scrollbar-thumb {
+        background-color: #0d6efd;
+    }
     .timeline-item {
         position: relative;
         padding-bottom: 1.5rem;
@@ -117,13 +131,15 @@
     .timeline-content {
         background: #f8f9fa;
         border-radius: 0.25rem;
-        padding: 1rem;
+        padding: 1.25rem;
         transition: all 0.3s ease;
+        border-left: 3px solid #0d6efd;
     }
 
     .timeline-content:hover {
         background: #e9ecef;
         transform: translateX(5px);
+        border-left-width: 5px;
     }
 
     .skill-cloud .badge {
@@ -145,40 +161,6 @@
         background: #f8f9fa;
     }
 
-    .description-text {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        height: 3em; /* Fixed height for 2 lines (assuming 1.5em line-height) */
-        line-height: 1.5em;
-        position: relative;
-        transition: height 0.3s ease;
-    }
-
-    .description-text.expanded {
-        -webkit-line-clamp: unset;
-        height: auto; /* Allow full height when expanded */
-    }
-
-    .description-container {
-        position: relative;
-    }
-
-    .see-more {
-        color: #0d6efd;
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: 0.8rem;
-        cursor: pointer;
-        margin-top: 0.25rem;
-        display: inline-block;
-    }
-
-    .see-more:hover {
-        text-decoration: underline;
-    }
 
     /* Make cards independent */
     .skills-card, .experience-card {
@@ -190,6 +172,113 @@
         max-height: 400px;
         overflow-y: auto;
         padding-right: 10px;
+    }
+
+    .hidden-content {
+        display: none;
+    }
+
+    .description-preview {
+        background: rgba(248, 249, 250, 0.5);
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        font-size: 0.9rem;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .see-more-link {
+        font-size: 0.85rem;
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+
+    .timeline-content .modal-title {
+        font-size: 1.25rem;
+        color: #0d6efd;
+    }
+
+    .position-icon {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(13, 110, 253, 0.1);
+        border-radius: 50%;
+    }
+
+    .position-icon i {
+        font-size: 1.1rem;
+    }
+
+    .company-info {
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+
+    .date-badge {
+        font-size: 0.8rem;
+    }
+
+    .date-badge .badge {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .modal-lg {
+        max-width: 800px;
+    }
+
+    .description-textarea {
+        background-color: #fff;
+        border: 1px solid rgba(0,0,0,0.1);
+        resize: none;
+        font-size: 1rem;
+        line-height: 1.6;
+        padding: 1rem;
+        min-height: 300px;
+    }
+
+    .description-textarea:focus {
+        box-shadow: none;
+        border-color: rgba(0,0,0,0.1);
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .card-header .btn-link {
+        padding: 0.25rem 0.5rem;
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+
+    .card-header .btn-link:hover {
+        background: rgba(13, 110, 253, 0.1);
+        border-radius: 0.25rem;
+    }
+
+    .card-body.scrollable-card {
+        max-height: 400px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #0d6efd #f8f9fa;
+    }
+
+    .card-body.scrollable-card::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .card-body.scrollable-card::-webkit-scrollbar-track {
+        background: #f8f9fa;
+        border-radius: 3px;
+    }
+
+    .card-body.scrollable-card::-webkit-scrollbar-thumb {
+        background-color: #0d6efd;
+        border-radius: 3px;
     }
 </style>
 {% endblock %}
@@ -420,34 +509,79 @@
                     <div class="card experience-card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">Experience Timeline</h5>
-                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editExperienceModal">
-                                <i class="fas fa-plus me-1"></i>Add Experience
-                            </button>
+                            <div>
+                                {% if user_data.experience|length > 3 %}
+                                    <a href="{{ url_for('profiles.all_experiences', user_id=user_data.id) }}" class="btn btn-sm btn-link text-primary me-2">
+                                        <i class="fas fa-list-ul me-1"></i>View All ({{ user_data.experience|length }})
+                                    </a>
+                                {% endif %}
+                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editExperienceModal">
+                                    <i class="fas fa-plus me-1"></i>Add Experience
+                                </button>
+                            </div>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body scrollable-card">
                             {% if user_data.experience %}
                                 <div class="timeline">
-                                    {% for exp in user_data.experience %}
+                                    {% for exp in user_data.experience[:3] %}  <!-- Show only first 3 experiences -->
                                     <div class="timeline-item">
                                         <div class="timeline-marker"></div>
                                         <div class="timeline-content">
-                                            <h6 class="mb-1">{{ exp.title }}</h6>
-                                            <p class="text-primary mb-1">{{ exp.company }}</p>
-                                            <small class="text-muted d-block mb-2">
-                                                {{ exp.start_date }} - {{ exp.end_date or 'Present' }}
-                                            </small>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="position-icon me-3">
+                                                    <i class="fas fa-briefcase text-primary"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-0 fw-bold">{{ exp.title }}</h6>
+                                                    <div class="company-info">
+                                                        <i class="fas fa-building text-muted me-1"></i>
+                                                        <span class="text-primary">{{ exp.company }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="date-badge">
+                                                    <span class="badge bg-light text-dark border">
+                                                        <i class="fas fa-calendar-alt me-1"></i>
+                                                        {{ exp.start_date }} - {{ exp.end_date or 'Present' }}
+                                                    </span>
+                                                </div>
+                                            </div>
                                             {% if exp.description %}
-                                                <div class="description-container">
-                                                    <p class="description-text" id="desc-{{ loop.index }}">{{ exp.description }}</p>
-                                                    {% if exp.description|length > 100 %}
-                                                        <button type="button" class="see-more" onclick="toggleDescription('desc-{{ loop.index }}')">
-                                                            See more
-                                                        </button>
+                                                <div class="description-container mt-2">
+                                                    <div class="description-preview">
+                                                        <i class="fas fa-tasks text-muted me-1"></i>
+                                                        {{ exp.description[:50] }}{% if exp.description|length > 100 %}...{% endif %}
+                                                    </div>
+                                                    {% if exp.description|length > 50 %}
+                                                        <a href="#" class="see-more-link ms-4" data-bs-toggle="modal" data-bs-target="#descriptionModal{{ loop.index }}">
+                                                            <i class="fas fa-eye me-1"></i>See full description
+                                                        </a>
+                                                        
+                                                        <!-- Modal for this experience -->
+                                                        <div class="modal fade" id="descriptionModal{{ loop.index }}" tabindex="-1" aria-labelledby="descriptionModalLabel{{ loop.index }}" aria-hidden="true">
+                                                            <div class="modal-dialog modal-lg">
+                                                                <div class="modal-content">
+                                                                    <div class="modal-header">
+                                                                        <h5 class="modal-title" id="descriptionModalLabel{{ loop.index }}">
+                                                                            <i class="fas fa-briefcase me-2"></i>
+                                                                            {{ exp.title }} at {{ exp.company }}
+                                                                        </h5>
+                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                    </div>
+                                                                    <div class="modal-body">
+                                                                        <textarea class="form-control description-textarea" readonly rows="12">{{ exp.description }}</textarea>
+                                                                    </div>
+                                                                    <div class="modal-footer">
+                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     {% endif %}
                                                 </div>
                                             {% endif %}
                                         </div>
                                     </div>
+                                    <br></br>
                                     {% endfor %}
                                 </div>
                             {% else %}
