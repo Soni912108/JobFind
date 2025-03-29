@@ -25,9 +25,21 @@ class User(UserMixin, db.Model):
     last_login = db.Column(DateTime)
 
     # Relationships for chat
-    rooms_owned = db.relationship('Room', foreign_keys='Room.owner_id', backref='owner', lazy=True)
-    rooms_joined = db.relationship('Room', foreign_keys='Room.other_user_id', backref='other_user', lazy=True)
-    messages = db.relationship('Message', backref='sender', lazy=True)
+    rooms_owned = db.relationship('Room', 
+                                foreign_keys='Room.owner_id',
+                                backref=db.backref('owner', passive_deletes=True),
+                                cascade='all, delete-orphan',
+                                single_parent=True)
+    
+    rooms_joined = db.relationship('Room',
+                                 foreign_keys='Room.other_user_id',
+                                 backref=db.backref('other_user', passive_deletes=True),
+                                 cascade='all, delete-orphan',
+                                 single_parent=True)
+    
+    messages = db.relationship('Message',
+                             backref=db.backref('sender', passive_deletes=True),
+                             cascade='all, delete-orphan')
 
     __mapper_args__ = {
         'polymorphic_identity': 'user',
@@ -50,7 +62,9 @@ class Person(User):
     current_company_info = db.Column(JSON)
     
     # Relationship for job applications
-    applications = db.relationship('JobApplication', backref='applicant', lazy=True)
+    applications = db.relationship('JobApplication',
+                                 backref=db.backref('applicant', passive_deletes=True),
+                                 cascade='all, delete-orphan')
 
     __mapper_args__ = {
         'polymorphic_identity': 'person',
@@ -71,7 +85,9 @@ class Company(User):
     description = db.Column(LONGTEXT)
     social_links = db.Column(JSON)
     # Relationship for jobs
-    jobs = db.relationship('Job', backref='company', lazy=True, cascade="all, delete-orphan")
+    jobs = db.relationship('Job',
+                          backref=db.backref('company', passive_deletes=True),
+                          cascade='all, delete-orphan')
 
     __mapper_args__ = {
         'polymorphic_identity': 'company',
@@ -90,14 +106,20 @@ class Room(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    other_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    owner_id = db.Column(db.Integer, 
+                        db.ForeignKey('users.id', ondelete='CASCADE'),
+                        nullable=False)
+    other_user_id = db.Column(db.Integer,
+                             db.ForeignKey('users.id', ondelete='CASCADE'),
+                             nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Messages in this room
-    messages = db.relationship('Message', backref='room', lazy=True, cascade="all, delete-orphan")
+    messages = db.relationship('Message',
+                             backref=db.backref('room', passive_deletes=True),
+                             cascade='all, delete-orphan')
 
     def get_other_participant(self, current_user_id):
         """Get the other participant's info based on current user"""
@@ -111,8 +133,12 @@ class Message(db.Model):
     __tablename__ = 'messages'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    room_id = db.Column(db.Integer, db.ForeignKey('rooms.id'), nullable=False)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    room_id = db.Column(db.Integer,
+                       db.ForeignKey('rooms.id', ondelete='CASCADE'),
+                       nullable=False)
+    sender_id = db.Column(db.Integer,
+                         db.ForeignKey('users.id', ondelete='CASCADE'),
+                         nullable=False)
     message = db.Column(LONGTEXT)
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
@@ -131,7 +157,9 @@ class Job(db.Model):
     __tablename__ = 'jobs'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
+    company_id = db.Column(db.Integer,
+                          db.ForeignKey('companies.id', ondelete='CASCADE'),
+                          nullable=False)
     title = db.Column(db.String(100))
     description = db.Column(LONGTEXT)
     location = db.Column(db.String(100))
@@ -141,15 +169,21 @@ class Job(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
     # Relationship to applications
-    applications = db.relationship('JobApplication', backref='job', lazy=True, cascade="all, delete-orphan")
+    applications = db.relationship('JobApplication',
+                                 backref=db.backref('job', passive_deletes=True),
+                                 cascade='all, delete-orphan')
 
 
 class JobApplication(db.Model):
     __tablename__ = 'job_applications'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
-    applicant_id = db.Column(db.Integer, db.ForeignKey('persons.id'), nullable=False)
+    job_id = db.Column(db.Integer,
+                      db.ForeignKey('jobs.id', ondelete='CASCADE'),
+                      nullable=False)
+    applicant_id = db.Column(db.Integer,
+                            db.ForeignKey('persons.id', ondelete='CASCADE'),
+                            nullable=False)
     # Store only the unique filename or URL
     resume_filename = db.Column(db.String(255))
     status = db.Column(db.String(100), default="pending")

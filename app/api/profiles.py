@@ -1,6 +1,7 @@
 from flask import Blueprint, request, flash, redirect, url_for, jsonify,render_template
+from flask_login import logout_user
 from app import db
-from app.models import Person, Company, User
+from app.models import Person, Company, User, Room, Notifications
 from datetime import datetime
 from flask_login import login_required, current_user
 
@@ -199,6 +200,54 @@ def edit_professional_info(user_id):
             'message': 'Professional information updated successfully'
         })
         
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+
+# DANGER ZONE
+# delete profile
+@profiles_bp.route("/delete/<int:user_id>", methods=["POST"])
+@login_required
+def delete_account(user_id):
+    if user_id != current_user.id:
+        return jsonify({
+            'status': 'error',
+            'message': 'Unauthorized access'
+        }), 403
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Begin transaction
+        db.session.begin_nested()
+        
+        # Handle rooms (not cascaded)
+        Room.query.filter(
+            db.or_(
+                Room.owner_id == user_id,
+                Room.other_user_id == user_id
+            )
+        ).delete(synchronize_session=False)
+        
+        # Delete notifications (if any)
+        Notifications.query.filter_by(receiver_id=user_id).delete()
+        
+        # Delete the user (this will trigger cascades)
+        db.session.delete(user)
+        
+        # Commit all changes
+        db.session.commit()
+        
+        # Log the user out
+        logout_user()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'User deleted successfully'
+        })
+            
     except Exception as e:
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
