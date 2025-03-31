@@ -12,3 +12,5 @@ app/utils/old_db_design.py
 app/templates/company/register.html
 app/templates/company/login.html
 app/static/resume_upload/*.pdf
+app/logs
+logs/

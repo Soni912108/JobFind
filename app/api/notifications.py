@@ -1,4 +1,4 @@
-from flask import Blueprint, request,jsonify
+from flask import Blueprint, request,jsonify,current_app
 from app import db
 from app.models import  Notifications
 from datetime import datetime
@@ -16,6 +16,8 @@ def mark_notification_read(notification_id):
     if notification and notification.receiver_id == current_user.id:
         notification.read = True
         db.session.commit()
+        # log
+        current_app.logger.info(f"Notification id: {notification_id} mark as read")
         return jsonify({"message": "Notification mark as read"}),200
     
     return jsonify({"error": "Notification not found"}), 404
@@ -28,7 +30,9 @@ def mark_all_read():
     for notification in all_current_user_notifications:
         notification.read = True
         db.session.commit()
-        return jsonify({"message": "Notification mark as read"}),200
+        # log
+        current_app.logger.info(f"Notifications for user: {current_user.name} mark as read")
+        return jsonify({"message": "Notifications mark as read"}),200
     
     return jsonify({"error": "No notifications found"}), 404
 
@@ -40,6 +44,8 @@ def delete_notification(notification_id):
     if notification and notification.receiver_id == current_user.id:
         db.session.delete(notification)
         db.session.commit()
+        # log
+        current_app.logger.info(f"Notification id:{notification_id} for user: {current_user.name} deleted")
         return jsonify({"message": "Notification deleted"}),200
     
     return jsonify({"error": "Notification not found"}), 404
@@ -58,7 +64,7 @@ def handle_join_notifications(data):
         user_type = data.get('user_type')
         
         if not user_id:
-            print("Error: No user_id provided in join_notifications")
+            current_app.logger.critical("Error: No user_id provided in join_notifications")
             return
         
         # Create a unique room name for user's notifications
@@ -67,13 +73,13 @@ def handle_join_notifications(data):
         # Join the room
         join_room(notification_room)
         
-        print(f"User {user_id} ({user_type}) joined notification room: {notification_room}")
+        current_app.logger.info(f"User {user_id} ({user_type}) joined notification room: {notification_room}")
         
         # Optionally send confirmation
         return {"status": "success", "message": f"Joined notification room"}
         
     except Exception as e:
-        print(f"Error in handle_join_notifications: {str(e)}")
+        current_app.logger.error(f"Error in handle_join_notifications: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -94,10 +100,10 @@ def create_notification(receiver_id, message,emit_notification=False):
     try:
         db.session.add(new_notification)
         db.session.commit()
-        print(f"Notification added to DB correctly {new_notification.id}")
+        current_app.logger.info(f"Notification added to DB correctly {new_notification.id}")
     except Exception as e:
         db.session.rollback()
-        print(f"Error creating notification: {e}")
+        current_app.logger.error(f"Error creating notification: {e}")
         return None
 
     if emit_notification:
@@ -105,7 +111,7 @@ def create_notification(receiver_id, message,emit_notification=False):
             socketio.emit('new_notification', 
                          new_notification.__json__(), 
                          room=notification_room)
-            print(f"Emitted notification to room: {notification_room}")
+            current_app.logger.info(f"Emitted notification to room: {notification_room}")
             
     return new_notification
 

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, flash, redirect, url_for, jsonify,render_template
+from flask import Blueprint, request, flash, redirect, url_for, jsonify,render_template,current_app
 from flask_login import logout_user
 from app import db
 from app.models import Person, Company, User, Room, Notifications
@@ -28,7 +28,7 @@ def visit_profile(user_id):
         'location': user.location or 'No location set',
         'user_type': user.user_type
     }
-    
+
     # Add type-specific data
     if isinstance(user, Person):
         user_data.update({
@@ -46,7 +46,9 @@ def visit_profile(user_id):
             'social_links': user.social_links or {}
         })
         template = 'profile/visit_company_profile.html'
-    print(user_data)
+    # log
+    current_app.logger.info(f"Visiting {user_data['name']}'s profile")
+    
     return render_template(
         template,
         user=current_user,
@@ -68,6 +70,8 @@ def all_experiences(user_id):
         'name': user.name,
         'experience': user.experience or []
     }
+    # log
+    current_app.logger.info(f"User {current_user.id} requested to view profile of user: {user_id}")
     
     return render_template(
         'profile/all_experience.html',
@@ -107,7 +111,9 @@ def edit_basic_profile(user_id):
             
         user.updated_at = datetime.now()
         db.session.commit()
-        
+        # log
+        current_app.logger.info(f"{user.name}'s basic profile info updated")
+
         return jsonify({
             'status': 'success',
             'message': 'Basic profile information updated successfully'
@@ -115,6 +121,7 @@ def edit_basic_profile(user_id):
         
     except Exception as e:
         db.session.rollback()
+        current_app.logger.critical(f"Error updating basic profile info for user {user_id or None}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # 2. Company Social Links
@@ -180,7 +187,6 @@ def edit_professional_info(user_id):
                     }
                     for exp in data['experience']
                 ]
-                print(f"All experiences: {all_experience}")
                 person.experience = all_experience
         
         # Handle current company info update
@@ -195,6 +201,9 @@ def edit_professional_info(user_id):
         person.updated_at = datetime.now()
         db.session.commit()
         
+        # log debug
+        current_app.logger.info(f"Updated professional info for profile {person.name}")
+
         return jsonify({
             'status': 'success',
             'message': 'Professional information updated successfully'
@@ -202,6 +211,7 @@ def edit_professional_info(user_id):
         
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f"Error updating professional info. Error: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
@@ -219,7 +229,7 @@ def delete_account(user_id):
     
     try:
         user = User.query.get_or_404(user_id)
-        
+        current_app.logger.info(f"Deleting account id: {user.name}")
         # Begin transaction
         db.session.begin_nested()
         
@@ -239,7 +249,7 @@ def delete_account(user_id):
         
         # Commit all changes
         db.session.commit()
-        
+        current_app.logger.critical(f"Profile deleted successfully, for user: {user.name}")
         # Log the user out
         logout_user()
         
@@ -250,4 +260,5 @@ def delete_account(user_id):
             
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f"Error deleting profile. Error: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500

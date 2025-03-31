@@ -1,0 +1,84 @@
+{% extends "index.html" %}
+<style>
+    .about-section img {
+    max-width: 100%;
+    height: auto;
+    }
+
+    .section-title {
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+    }
+
+    .contact-section .card {
+        border: none;
+        border-radius: 15px;
+    }
+
+    .contact-section .form-control {
+        border-radius: 8px;
+        padding: 0.8rem;
+    }
+
+    .contact-section .btn-primary {
+        padding: 0.8rem 2rem;
+        border-radius: 50px;
+    }
+</style>
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Privacy Policy</h1>
+    
+    <div class="mb-4">
+        <h3>1. Information We Collect</h3>
+        <p>We collect information that you provide directly to us, including:</p>
+        <ul>
+            <li>Name and contact information</li>
+            <li>Professional experience and skills</li>
+            <li>Account credentials</li>
+            <li>Communication preferences</li>
+        </ul>
+    </div>
+
+    <div class="mb-4">
+        <h3>2. How We Use Your Information</h3>
+        <p>We use the information we collect to:</p>
+        <ul>
+            <li>Provide and maintain our services</li>
+            <li>Match professionals with relevant job opportunities</li>
+            <li>Communicate with you about our services</li>
+            <li>Improve and develop new features</li>
+        </ul>
+    </div>
+
+    <div class="mb-4">
+        <h3>3. Information Sharing</h3>
+        <p>We do not sell your personal information. We share your information only:</p>
+        <ul>
+            <li>With your consent</li>
+            <li>With service providers who assist in our operations</li>
+            <li>When required by law</li>
+        </ul>
+    </div>
+
+    <div class="mb-4">
+        <h3>4. Your Rights</h3>
+        <p>You have the right to:</p>
+        <ul>
+            <li>Access your personal information</li>
+            <li>Correct inaccurate information</li>
+            <li>Request deletion of your information</li>
+            <li>Opt-out of marketing communications</li>
+        </ul>
+    </div>
+
+    <div class="mb-4">
+        <h3>5. Contact Us</h3>
+        <p>If you have any questions about this Privacy Policy, please contact us at:</p>
+        <ul>
+            <li>Email: privacy@jobfind.com</li>
+            <li>Phone: (555) 123-4567</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

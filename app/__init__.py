@@ -1,37 +1,40 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from .extensions import socketio
-
+from .extensions import socketio,mail
+from .utils.logging import setup_logger
+from .config.config import config_by_name
 from dotenv import load_dotenv
 import os
-# load the env keys
+
+# Load environment variables
 load_dotenv()
 
-# db
+# Initialize extensions
 db = SQLAlchemy()
-app = Flask(__name__)
 
-# this equals 50 MB memory size that the flask server can handle - 
-# just for reference: when in prod we might need to set a limit to the server like
-# Nginx -> client_max_body_size 50M; 
-# or Gunicorn -> gunicorn --max-request-size 52428800
-MEGABYTE = (2 ** 10) ** 2 #  50 MB memory size
-app.config['MAX_CONTENT_LENGTH'] = 50 * MEGABYTE #  50 MB memory size
-app.config['MAX_FORM_MEMORY_SIZE'] = 50 * MEGABYTE #  50 MB memory size
-# Configure the app 
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv('SQLALCHEMY_DATABASE_URI')
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# for resume uploads
-app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'resume_upload')
-
-
-def create_app():
-    # Initialize the app
+def create_app(config_name='default'):
+    app = Flask(__name__)
+    
+    # Load config
+    app.config.from_object(config_by_name[config_name])
+    
+    # Initialize extensions
     db.init_app(app)
-    # Initialize the socketio
     socketio.init_app(app)
+    mail.init_app(app)
+    setup_logger(app)
+    
+    # Initialize login manager
+    login_manager = LoginManager()
+    login_manager.login_view = 'frontend.login'
+    login_manager.init_app(app)
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        from .models import User
+        return User.query.get(int(user_id))
+    
     # Register blueprints
     from .views.frontend import frontend_bp
     from .api.jobs import jobs_bp
@@ -46,25 +49,12 @@ def create_app():
     app.register_blueprint(notifications_bp, url_prefix="/notifications/")
     app.register_blueprint(applications_bp, url_prefix="/applications/")
     app.register_blueprint(profiles_bp, url_prefix="/profile/")
-    # Initialize flask-login
-    login_manager = LoginManager()
-    login_manager.login_view = 'frontend.login'
-    login_manager.init_app(app)
-    
-    @login_manager.user_loader
-    def load_user(user_id):
-        # Now we can simply query the unified User model
-        from .models import User
-        return User.query.get(int(user_id))
-
-    
-    # Import models to ensure they're known to SQLAlchemy
-    from .models import User, Person, Company, Job, JobApplication, Room, Message
     
     # Create tables
     with app.app_context():
-        print("Creating tables...")
+        from .models import User, Person, Company, Job, JobApplication, Room, Message
+        app.logger.info("Database initialization: Starting table creation")
         db.create_all()
-        print("Tables created!")
+        app.logger.info("Database initialization: Tables created successfully")
     
     return app

@@ -227,10 +227,8 @@ def create_new_message(room_id, sender_id, message_text,db=None):
         )
         db.session.add(message)
         db.session.commit()
-        print(f"create_new_message -> Message created successfully: {message.id}")
         return message
     
     except Exception as db_error:
-        print(f"create_new_message -> Database error: {str(db_error)}")
         db.session.rollback()
         raise

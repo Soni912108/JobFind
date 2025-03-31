@@ -124,5 +124,17 @@
             companyFields.querySelectorAll('input, textarea').forEach(input => input.required = true);
         }
     }
+    // Set user type based on URL parameter
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const userType = urlParams.get('type');
+        if (userType) {
+            const selectElement = document.getElementById('userType');
+            selectElement.value = userType;
+            toggleFields(); // Call this to update the form fields
+        } else {
+            toggleFields(); // Initialize form fields
+        }
+    });
 </script>
 {% endblock %}
