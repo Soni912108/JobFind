@@ -1,12 +1,19 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import (Blueprint, render_template, request, 
+                   current_app,redirect, url_for, flash)
 from flask import session
 from flask_login import login_user, login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.models import User, Person, Company, Job, JobApplication, Room, Notifications
+from app.models import (
+    User, Person, Company, Job, 
+    JobApplication, Room, Notifications,ContactMessage
+)
+from datetime import datetime
+
 from app import db
+from app.utils.send_mail import send_contact_email
 from app.utils.validate_data import (validate_register_data, validate_login_data, is_form_empty,
                                    validate_register_company_data, validate_register_user_data)
-from datetime import datetime
+
 
 
 frontend_bp = Blueprint("frontend", __name__)
@@ -37,22 +44,19 @@ def jobs():
     )
     jobs_list = jobs_pagination.items
 
-    print("=== Jobs Debug ===")
     for job in jobs_list:
         if isinstance(current_user, Company):
             job.is_owner = job.company_id == current_user.id
-            print(f"Job {job.id} - Owner: {job.is_owner}")
         else:
             application = JobApplication.query.filter_by(
                 job_id=job.id, 
                 applicant_id=current_user.id
             ).first()
             job.already_applied = application is not None
-            print(f"Job {job.id} - Applied: {job.already_applied}")
-        
+        # tag of nr of applicants per job
         job.number_of_applicants = JobApplication.query.filter_by(job_id=job.id).count()
-        print(f"Number of applicants {job.number_of_applicants}")
-    print("=== Jobs Debug ===")
+    # log
+    current_app.logger.info(f"Total jobs found: {jobs_pagination.total}")
     
     return render_template(
         "jobs/jobs.html",
@@ -76,13 +80,7 @@ def applications_page():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     search_term = request.args.get('search', '').strip()
-    
-    # Debug logging
-    print("=== Applications Search Debug ===")
-    print(f"User ID: {current_user.id}")
-    print(f"Search term: '{search_term}'")
-    print(f"Page: {page}, Per_page: {per_page}")
-    
+
     # Base query
     base_query = db.session.query(
         Job,
@@ -96,7 +94,8 @@ def applications_page():
     
     # Check if user has any applications
     applications_count = base_query.count()
-    print(f"Applications found: {applications_count}")
+    current_app.logger.info(f"Applications found: {applications_count}")
+    
     if applications_count == 0:
         flash("You haven't applied to any jobs yet!", "info")
         return render_template(
@@ -104,22 +103,15 @@ def applications_page():
             applications=[],
             user=current_user
         )
-    
     # Add search filter if provided
     if search_term:
         base_query = base_query.filter(Job.title.ilike(f"%{search_term}%"))
-    
     # Add ordering
     query = base_query.order_by(JobApplication.applied_at.desc())
-    
     # Execute query with pagination
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-
-    # Debug results
-    print("\nQuery Results:")
-    for job, application in pagination.items:
-        print(f"Found Job: {job.title} (ID: {job.id}), Applied: {application.applied_at}")
-    print(f"Total results: {pagination.total}\n")
+    # log
+    current_app.logger.info(f"Total results: {pagination.total}")
     
     return render_template(
         "applications/view_applications.html",
@@ -143,26 +135,18 @@ def applicants():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     search_term = request.args.get('search', '').strip()
-    
-    # Debug logging
-    print("=== Applicants Search Debug ===")
-    print(f"Company ID: {current_user.id}")
-    print(f"Search term: '{search_term}'")
-    print(f"Page: {page}, Per_page: {per_page}")
-    
+
     # Base query for jobs posted by current company
     base_query = Job.query.filter_by(company_id=current_user.id)
     
     # Apply search filter if provided
     if search_term:
         base_query = base_query.filter(Job.title.ilike(f"%{search_term}%"))
-    
     # Order by creation date (most recent first)
     base_query = base_query.order_by(Job.created_at.desc())
-    
     # Check if company has any jobs
     jobs_count = base_query.count()
-    print(f"Jobs found: {jobs_count}")
+    current_app.logger.info(f"Jobs found: {jobs_count}")
     
     if jobs_count == 0:
         flash("You haven't posted any jobs yet!", "info")
@@ -184,7 +168,7 @@ def applicants():
             .all()
         
         # Debug info for applications
-        print(f"Job {job.id} ({job.title}) has {len(applications)} applications")
+        current_app.logger.info(f"Job {job.id} ({job.title}) has {len(applications)} applications")
         
         job_data = {
             "job": job,
@@ -290,9 +274,6 @@ def profile():
                 Job.company_id == current_user.id
             ).order_by(JobApplication.applied_at.desc()).limit(5).all(),
         })
-    
-    print(f"User is Company: {isinstance(current_user, Company)}")
-    print(f"User is Person: {isinstance(current_user, Person)}")
 
     return render_template(
         "profile/profile.html",
@@ -384,8 +365,7 @@ def login():
 @frontend_bp.route("/users/login", methods=["POST"])
 def login_post():
     req_data = request.form
-    print(f"Login data: {req_data}")
-    
+
     if is_form_empty(req_data):
         flash("No data provided in the form.", "warning")
         return redirect(url_for("frontend.login"))
@@ -418,9 +398,15 @@ def login_post():
         db.session.commit()
         # Store user type in the session
         session["user_type"] = user_type
+        # log
+        current_app.logger.info(f"Logging in the user: {user.name}")
+        # return
         flash("Login successful!", "success")
         return redirect(url_for("frontend.jobs"))
     else:
+        # log
+        current_app.logger.error("Invalid credentials.")
+        # return
         flash("Invalid credentials.", "danger")
         return redirect(url_for("frontend.login"))
 
@@ -432,8 +418,7 @@ def register():
 def register_post():
     try:
         req_data = request.form
-        print(f"Register data: {req_data}")
-        
+
         if is_form_empty(req_data):
             flash("No data provided in the form.", "warning")
             return redirect(url_for("frontend.register"))
@@ -477,12 +462,15 @@ def register_post():
 
         db.session.add(user)
         db.session.commit()
+        # log
+        current_app.logger.info(f"Registration successful for user: {user.name}")
+        # return
         flash("Registration successful", "success")
         return redirect(url_for('frontend.login'))
 
     except Exception as e:
         db.session.rollback()
-        print(f"Registration error: {e}")
+        current_app.logger.error(f"Registration error: {e}")
         flash('Error during registration', "danger")
         return redirect(url_for('frontend.register'))
 
@@ -492,5 +480,45 @@ def register_post():
 def logout():
     logout_user()
     session.clear()
+    current_app.logger.info(f"User: {current_user.name} logged out successfully")
     flash("You have been logged out.", "info")
     return redirect(url_for("frontend.login"))
+
+
+# -------------------endpoints to handle public pages-------------
+# privacy
+@frontend_bp.route('/privacy')
+def privacy():
+    return render_template('privacy.html', active='privacy')
+
+
+
+@frontend_bp.route('/contact', methods=['POST'])
+def contact_post():
+    try:
+        # Create new contact message
+        contact = ContactMessage(
+            name=request.form.get('name'),
+            email=request.form.get('email'),
+            subject=request.form.get('subject'),
+            message=request.form.get('message'),
+            created_at=datetime.now()
+        )
+        
+        # Save to database
+        db.session.add(contact)
+        db.session.commit()
+        
+        # Send email notification
+        if send_contact_email(contact):
+            flash('Thank you for your message! We will get back to you soon.', 'success')
+        else:
+            # Message saved to DB but email failed
+            flash('Your message was received but there was an issue with email notification.', 'warning')
+            
+    except Exception as e:
+        current_app.logger.error(f"Error processing contact form: {e}")
+        db.session.rollback()
+        flash('Sorry, there was an error sending your message.', 'danger')
+    
+    return redirect(url_for('frontend.index', _anchor='contact'))

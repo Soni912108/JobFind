@@ -1,6 +1,6 @@
 from flask import (
     Blueprint, request, flash, redirect, url_for, 
-    jsonify,send_from_directory,render_template
+    jsonify,send_from_directory,render_template,current_app
     )
 from datetime import datetime
 from flask_login import login_required, current_user
@@ -19,7 +19,6 @@ applications_bp = Blueprint("applications", __name__)
 @applications_bp.route("/application/delete/", methods=["POST"])
 @login_required
 def delete_application():
-    print(f"Delete application request form {request.form}")
     application_id = request.form.get('applicationId')
     if not application_id:
         flash("An unexpected error occurred", "warning")
@@ -31,7 +30,6 @@ def delete_application():
         applicant_id=current_user.id
     ).first()
     
-    print(find_application)
     if not find_application:
         flash("Application not found", "warning")
         return redirect(url_for('frontend.applications_page'))
@@ -39,74 +37,27 @@ def delete_application():
     try:
         db.session.delete(find_application)
         db.session.commit()
+        # log
+        current_app.logger.critical(f"Deleting application {find_application.id} for user: {current_user.name}")
+        # return for client
         flash("Application deleted successfully", "success")
         return redirect(url_for('frontend.applications_page'))
     except Exception as e:
         db.session.rollback()
-        print("Error deleting application:", str(e))
+        current_app.logger.error("Error deleting application:", str(e))
         flash("Error deleting application", "danger")
 
     return redirect(url_for('frontend.applications_page'))
 
 
 
-#NOT NEEDED - TOO COMPLICATED TO HANDLE
-# @applications_bp.route("/application/update/", methods=["POST"])
-# @login_required
-# def update_application():
-#     print(f"Request form on update application: {request.form}")
-#     print(f"Request files on update application: {request.files}")
-    
-#     if not isinstance(current_user, Person) or not current_user.can_apply_to_job():
-#         flash("Only Professionals can update applications", "danger")
-#         return redirect(url_for('frontend.applications_page'))
-
-#     application_id = request.form.get('applicationId')
-#     if not application_id:
-#         flash("An unexpected error occurred", "warning")
-#         return redirect(url_for('frontend.index'))
-
-#     application = JobApplication.query.filter_by(
-#         id=application_id,
-#         applicant_id=current_user.id
-#     ).first()
-
-#     if not application:
-#         flash("Application not found", "warning")
-#         return redirect(url_for('frontend.applications_page'))
-    
-#     try:
-#         if 'resume' in request.files:
-#             unique_filename, file_url = save_resume(request.files.get('resume'))
-#             print(f"Saved file as {unique_filename}, URL: {file_url}")
-#             if unique_filename:
-#                 application.resume_filename = unique_filename
-#             else:
-#                 flash("Error saving resume file", "danger")
-#                 return redirect(url_for('frontend.applications_page'))
-        
-#         application.updated_at = datetime.now()
-#         db.session.commit()
-#         flash("Application updated successfully", "success")
-#         return redirect(url_for('frontend.applications_page'))
-#     except Exception as e:
-#         db.session.rollback()
-#         print("Error updating application:", str(e))
-#         flash("Error updating application", "danger")
-
-#     return redirect(url_for('frontend.applications_page'))
-
-
-# @applications_bp.route("/application/upload_resume/<string:file_name>", methods=["POST"])
-# @login_required
-# def upload_resume(file_name):
-#     pass
 
 @applications_bp.route("/application/download_resume/<string:file_name>", methods=["GET"])
 @login_required
 def download_resume(file_name):
     if file_name and allowed_file(file_name):
         original_filename = secure_filename(file_name)
+        current_app.logger.info(f"Downloading resume: {original_filename} for user: {current_user.name}...")
         return send_from_directory(app.config["UPLOAD_FOLDER"], original_filename, as_attachment=True)
 
     return render_template("errors/404.html"), 404
@@ -182,6 +133,8 @@ def application_detail(application_id):
         # Count total applicants for this job
         total_applicants = JobApplication.query.filter_by(job_id=application.job_id).count()
         
+        current_app.logger.info(f"Returning application details for application id: {application_id}")
+
         # Get application data with expanded details
         return jsonify({
             "id": application.id,
@@ -207,7 +160,7 @@ def application_detail(application_id):
         })
 
     except Exception as e:
-        print("Error fetching application details:", str(e))
+        current_app.logger.error("Error fetching application details:", str(e))
         return jsonify({"error": "Error fetching application details"}), 500
 
 
@@ -256,7 +209,8 @@ def update_status():
         # Get applicant name for the success message
         applicant_name = application.applicant.name
         job_title = application.job.title
-
+        # log
+        current_app.logger.info(f"Status for application {job_title}, applicant name: {applicant_name}")
         # send notification to applicant
         notification_message = f"Status for your application for '{job_title}' at {application.job.company.name} updated to {new_status.capitalize()}. application_id: {application_id}"
         create_notification(application.applicant_id, notification_message, emit_notification=True)
@@ -265,7 +219,63 @@ def update_status():
         
     except Exception as e:
         db.session.rollback()
-        print("Error updating application status:", str(e))
+        current_app.logger.error("Error updating application status:", str(e))
         flash("Error updating application status", "danger")
     
     return redirect(url_for('frontend.applicants'))
+
+
+
+# ------------------------------------------------------------------------
+
+#NOT NEEDED - TOO COMPLICATED TO HANDLE
+# @applications_bp.route("/application/update/", methods=["POST"])
+# @login_required
+# def update_application():
+#     print(f"Request form on update application: {request.form}")
+#     print(f"Request files on update application: {request.files}")
+    
+#     if not isinstance(current_user, Person) or not current_user.can_apply_to_job():
+#         flash("Only Professionals can update applications", "danger")
+#         return redirect(url_for('frontend.applications_page'))
+
+#     application_id = request.form.get('applicationId')
+#     if not application_id:
+#         flash("An unexpected error occurred", "warning")
+#         return redirect(url_for('frontend.index'))
+
+#     application = JobApplication.query.filter_by(
+#         id=application_id,
+#         applicant_id=current_user.id
+#     ).first()
+
+#     if not application:
+#         flash("Application not found", "warning")
+#         return redirect(url_for('frontend.applications_page'))
+    
+#     try:
+#         if 'resume' in request.files:
+#             unique_filename, file_url = save_resume(request.files.get('resume'))
+#             print(f"Saved file as {unique_filename}, URL: {file_url}")
+#             if unique_filename:
+#                 application.resume_filename = unique_filename
+#             else:
+#                 flash("Error saving resume file", "danger")
+#                 return redirect(url_for('frontend.applications_page'))
+        
+#         application.updated_at = datetime.now()
+#         db.session.commit()
+#         flash("Application updated successfully", "success")
+#         return redirect(url_for('frontend.applications_page'))
+#     except Exception as e:
+#         db.session.rollback()
+#         print("Error updating application:", str(e))
+#         flash("Error updating application", "danger")
+
+#     return redirect(url_for('frontend.applications_page'))
+
+
+# @applications_bp.route("/application/upload_resume/<string:file_name>", methods=["POST"])
+# @login_required
+# def upload_resume(file_name):
+#     pass

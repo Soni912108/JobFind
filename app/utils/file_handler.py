@@ -1,3 +1,4 @@
+from flask import current_app
 from werkzeug.utils import secure_filename
 from flask_login import current_user
 import os
@@ -22,7 +23,7 @@ def save_resume(file):
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
         file.save(file_path)
         file_url = f"/static/resume_upload/{unique_filename}"
-        print(f"Saved file as {unique_filename}, URL: {file_url}")
+        current_app.logger.info(f"Saved file as {unique_filename}, URL: {file_url}")
         return unique_filename, file_url
     return None, None
 
@@ -35,6 +36,7 @@ def delete_resume(filename):
     if filename:
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(filename))
         if os.path.exists(file_path):
+            current_app.logger.warning(f"Removed resume {file_path} form disk")
             os.remove(file_path)
             return True
     return False

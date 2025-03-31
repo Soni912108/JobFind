@@ -1,4 +1,4 @@
-from flask import Blueprint, request, flash, redirect, url_for, jsonify
+from flask import Blueprint, request, flash, redirect, url_for, jsonify,current_app
 from flask_login import login_required, current_user
 # local
 from app.utils.file_handler import save_resume, allowed_file
@@ -15,8 +15,6 @@ jobs_bp = Blueprint("jobs", __name__)
 @login_required
 def create_job():
     try:
-        # Debug logging
-        print("Form data:", request.form)
         if is_form_empty(request.form):
             flash("No data provided in the form.", "warning")
             return redirect(request.referrer or url_for('frontend.jobs'))
@@ -31,7 +29,7 @@ def create_job():
             flash("Only companies can create a job", "danger")
             return redirect(request.referrer or url_for('frontend.jobs'))
         
-        print(f"Description Length: {len(request.form.get('description'))}")
+        current_app.logger.info(f"Description Length: {len(request.form.get('description'))}")
         # Create new job with company_id
         new_job = Job(
             title=request.form.get('jobtitle'),
@@ -44,12 +42,12 @@ def create_job():
         # Add and commit to database
         db.session.add(new_job)
         db.session.commit()
-
+        current_app.logger.info(f"User: {current_user.name} created a job successfully")
         flash("Job created successfully", "success")
 
     except Exception as e:
         db.session.rollback()
-        print("Error creating job:", str(e))
+        current_app.logger.error("Error creating job:", str(e))
         flash("Error creating job", "danger")
 
     return redirect(request.referrer or url_for('frontend.jobs'))
@@ -61,6 +59,8 @@ def job_detail(job_id):
     job = Job.query.filter_by(id=job_id).first()
     if not job:
         return jsonify({"error": "Job not found"})
+
+    current_app.logger.info(f"Returning details for job is: {job_id}")
 
     return jsonify({
         "job_id": job.id,
@@ -109,10 +109,12 @@ def update_job():
         job.updated_at = datetime.now()
 
         db.session.commit()
+        current_app.logger.info(f"Job: {job.title} updated successfully")
+
         flash("Job updated successfully", "success")
     except Exception as e:
         db.session.rollback()
-        print("Error updating job:", str(e))
+        current_app.logger.error("Error updating job:", str(e))
         flash("Error updating job", "danger")
 
     return redirect(request.referrer or url_for('frontend.jobs'))
@@ -139,7 +141,8 @@ def deactivate_job(job_id):
         job.is_active = active
         job.updated_at = datetime.now()
         db.session.commit()
-        
+        # log
+        current_app.logger.warning(f"Deactivating job: {job_id}")
         status_text = "activated" if active else "deactivated"
         return jsonify({
             "success": True,
@@ -148,7 +151,7 @@ def deactivate_job(job_id):
         }), 200
     except Exception as e:
         db.session.rollback()
-        print("Error updating job status:", str(e))
+        current_app.logger.error("Error updating job status:", str(e))
         return jsonify({"error": "Error updating job status"}), 500
 
 
@@ -156,7 +159,6 @@ def deactivate_job(job_id):
 @jobs_bp.route("/job/delete/", methods=["POST"])
 @login_required
 def delete_job():
-    print("Delete job form data:", request.form)
     job_id = request.form.get("jobId")
     if not job_id:
         flash("An unexpected error occurred", "warning")
@@ -172,10 +174,11 @@ def delete_job():
     try:
         db.session.delete(job)
         db.session.commit()
+        current_app.logger.warning(f"Job: {job.title} deleted successfully")
         flash("Job deleted successfully", "success")
     except Exception as e:
         db.session.rollback()
-        print("Error deleting job:", str(e))
+        current_app.logger.error("Error deleting job:", str(e))
         flash("Error deleting job", "danger")
 
     return redirect(request.referrer or url_for('frontend.jobs'))
@@ -184,10 +187,6 @@ def delete_job():
 @jobs_bp.route("/job/apply/<int:job_id>", methods=["POST"])
 @login_required
 def apply_job(job_id):
-    print("==== Job Application Debug ====")
-    print(f"Request Method: {request.method}")
-    print(f"Job ID from URL: {job_id}")
-
     # Check if job exists
     job = Job.query.filter_by(id=job_id, is_active=True).first()
     if not job:
@@ -206,10 +205,7 @@ def apply_job(job_id):
         job_id=job.id,
         applicant_id=current_user.id,
     ).first()
-    
-    print(already_applied)
-    print("============================")
-    
+
     if already_applied is not None:
         return jsonify({"error": "You have already applied for this job"}), 409
     
@@ -222,13 +218,13 @@ def apply_job(job_id):
         )
         
         unique_filename, file_url = save_resume(request.files.get('resume'))
-        print(f"In JOBS: Saved file as {unique_filename}, URL: {file_url}")
+        current_app.logger.info(f"In JOBS: Saved file as {unique_filename}, URL: {file_url}")
         if unique_filename:
             application.resume_filename = unique_filename
     
         db.session.add(application)
         db.session.commit()
-
+        current_app.logger.info(f"{current_user.name} {current_user.surname} applied for job: {job.title} successfully")
         # Create a notification for the company receiving the application
         notification_message = f"{current_user.name} {current_user.surname} applied for your job '{job.title}'"
         create_notification(job.company_id, notification_message, emit_notification=True)
@@ -236,7 +232,7 @@ def apply_job(job_id):
         return jsonify({"message": "Application submitted successfully"}), 200
     except Exception as e:
         db.session.rollback()
-        print("Error applying for job:", str(e))
+        current_app.logger.error("Error applying for job:", str(e))
         return jsonify({"error": "Error applying for job"}), 500
 
     

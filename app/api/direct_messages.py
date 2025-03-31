@@ -1,4 +1,5 @@
-from flask import Blueprint, request, render_template, flash, redirect, url_for, jsonify
+from flask import (Blueprint, request, render_template, 
+                   flash, redirect, url_for, jsonify,current_app)
 from flask_socketio import emit, join_room, rooms
 from flask_login import login_required, current_user
 # local
@@ -52,12 +53,16 @@ def new_room():
         
         db.session.add(new_room)
         db.session.commit()
-
+        # log
+        current_app.logger.info(f"{new_room.name} Room created successfully from user: {current_user.name}")
+        # return
         flash("Room created successfully", "success")
         return jsonify({"success": True})
     except Exception as e:
         db.session.rollback()
-        print("Error creating room:", str(e))
+        # log
+        current_app.logger.error("Error creating room:", str(e))
+        # return
         flash("Error creating room", "danger")
         return jsonify({"success": False, "message": str(e)})
 
@@ -83,11 +88,12 @@ def join_room_route(room_id):
         # Get other participant's info using the helper method
         other_participant = room.get_other_participant(current_user.id)
         is_room_owner = current_user.id == room.owner_id
-        print(f"{current_user.id} is the owner of the room? {is_room_owner}, owner id of the room is: {room.owner_id}")
         # Get messages for this room
         messages = Message.query.filter_by(room_id=room_id)\
                               .order_by(Message.created_at.asc())\
                               .all()
+        # log
+        current_app.logger.info(f"User: {current_user.name} joined room: {room.name}")
 
         return render_template(
             "dms/messages.html",
@@ -100,7 +106,7 @@ def join_room_route(room_id):
             user=current_user
         )
     except Exception as e:
-        print(f"Error joining room: {str(e)}")
+        current_app.logger.error(f"Error joining room: {str(e)}")
         flash("Error accessing room", "danger")
         return redirect(url_for('frontend.rooms'))
 
@@ -117,13 +123,20 @@ def delete_room():
         return redirect(request.referrer or url_for('frontend.rooms'))
 
     room_to_delete = Room.query.filter_by(id=room_id, owner_id=current_user.id).first()
-    if room_to_delete:
+    if not room_to_delete:
+        return render_template("errors/404.html"), 404
+    
+    try:
         # Delete the room from the database
         db.session.delete(room_to_delete)
         db.session.commit()
+        # log
+        current_app.logger.warning(f"{current_user.name} deleted room: {room_to_delete.name} successfully")
         flash(f"Room {room_to_delete.name} deleted successfully", "success")
-    else:
-        flash("Room not found", "danger")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting job. Error:{e}")
+        flash(f"Error deleting job","warning")
     
     return redirect(url_for("frontend.rooms"))
 
@@ -135,7 +148,6 @@ def delete_room():
 def rename_room():
     try:
         room_name = request.form.get("name")
-        print(f"Received room name: {room_name}")
         room_id = int(request.form.get("room-id"))
 
         if not room_id:
@@ -164,12 +176,13 @@ def rename_room():
         # update the room name after checks are passed
         room_to_rename.name = room_name
         db.session.commit()
+        current_app.logger.info(f"Room:{room_id} renamed successfully from old name:{room_to_rename.name} to {room_name} ")
         flash("Room renamed successfully", "success")
         return redirect(url_for("frontend.rooms"))
 
     except Exception as e:
         db.session.rollback()
-        print("Error renaming room:", str(e))
+        current_app.logger.error("Error renaming room:", str(e))
         flash("Error renaming room", "danger")
         return jsonify({"success": False, "message": str(e)})
 
@@ -206,7 +219,7 @@ def on_join(data):
     room = data.get('room')
     if room:
         join_room(room)
-        print(f"User {current_user.id} joined room {room}")  # Debug log
+        current_app.logger.info(f"User {current_user.id} joined room {room}")  # Debug log
         return True
     return False
 
@@ -236,14 +249,13 @@ def new_message(data):
     # Prepare message data for emission
     message_data = message.json_version()
     message_data['sender_name'] = current_user.name
-    print(f"Prepared message data: {message_data}")
 
     # Emit the message to the room (sender will not receive it)
     try:
         emit('new message', message_data, room=str(room_id), include_self=False)
-        print(f"Message emitted successfully to room {room_id}")
+        current_app.logger.info(f"Message emitted successfully to room {room_id}")
     except Exception as emit_error:
-        print(f"Emit error: {str(emit_error)}")
+        current_app.logger.error(f"Emit error: {str(emit_error)}")
         emit('error', {"errors": emit_error}, room=room_id)
 
     # Create notification for the other participant
@@ -253,9 +265,9 @@ def new_message(data):
         if str(room_id) not in rooms(other_participant.id):
             notification_message = f"New message from {current_user.name} on room {Room.query.get(room_id).name}. with: {room_id}"
             create_notification(other_participant.id, notification_message, emit_notification=True)
-            print(f"Notification created for user {other_participant.id}")
+            current_app.logger.info(f"Notification created for user {other_participant.id}")
     except Exception as notif_error:
-        print(f"Notification error: {str(notif_error)}")
+        current_app.logger.error(f"Notification error: {str(notif_error)}")
     
     return True
 
