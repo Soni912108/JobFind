@@ -197,88 +197,10 @@
             margin: 0.5rem;
         }
 
-        /* Navbar styles */
-        .main-navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            padding: 1rem 0;
-        }
-
-        .main-navbar .navbar-brand {
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .main-navbar .nav-link {
-            color: var(--secondary-color);
-            margin: 0 0.5rem;
-            transition: color 0.3s ease;
-        }
-
-        .main-navbar .nav-link:hover {
-            color: var(--primary-color);
-        }
-
-        /* Footer styles */
-        .footer {
-            background: #f8f9fa;
-            color: var(--secondary-color);
-        }
-
-        .footer h5 {
-            color: var(--primary-color);
-            margin-bottom: 1.5rem;
-        }
-
-        .footer a {
-            color: var(--secondary-color);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .footer a:hover {
-            color: var(--primary-color);
-        }
-
-        .footer .fab {
-            font-size: 1.5rem;
-        }
     </style>
 </head>
 <body>
-    <nav class="main-navbar navbar navbar-expand-lg navbar-light">
-        <div class="container">
-            <a class="navbar-brand" href="/">JobFind</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#features">Features</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#about">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#contact">Contact</a>
-                    </li>
-                    <li>
-                        <a href="/users/login" class="nav-link">Sign In</a>
-                    </li>
-                    <li>
-                        <a href="/users/register" class="nav-link">Get Started</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    {% include 'public/public_navbar.html' %}
 
     <!-- Hero Section -->
     <section class="hero-section">
@@ -363,7 +285,7 @@
         </section>
     </div>
 
-    <!-- Add these sections before the footer -->
+    <!-- About Section -->
     <section id="about" class="about-section py-5">
         <div class="container">
             <div class="row align-items-center">
@@ -407,42 +329,8 @@
         </div>
     </section>
 
-    <footer class="footer">
-        <div class="container">
-            <div class="row py-5">
-                <div class="col-md-4 mb-4">
-                    <h5>About JobFind</h5>
-                    <p>Connecting professionals with their dream careers and helping companies find the perfect talent.</p>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <h5>Quick Links</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="#features">Features</a></li>
-                        <li><a href="#about">About Us</a></li>
-                        <li><a href="#contact">Contact</a></li>
-                        <li><a href="/privacy">Privacy Policy</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <h5>Contact Us</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-envelope me-2"></i> contact@jobfind.com</li>
-                        <li><i class="fas fa-phone me-2"></i> (555) 123-4567</li>
-                        <li class="mt-3">
-                            <a href="#" class="me-2"><i class="fab fa-facebook"></i></a>
-                            <a href="#" class="me-2"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="me-2"><i class="fab fa-linkedin"></i></a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <div class="row border-top py-3">
-                <div class="col text-center">
-                    <small>&copy; 2024 JobFind. All rights reserved.</small>
-                </div>
-            </div>
-    </div>
-    </footer>
+    <!-- Footer -->
+    {% include 'public/public_footer.html' %}
 
     <!-- Add this modal at the bottom of the body, before scripts -->
     <div class="modal fade" id="contactModal" tabindex="-1">

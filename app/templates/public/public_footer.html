@@ -1,0 +1,72 @@
+{% block head %}
+<style>
+    /* Footer styles */
+    .footer {
+            background: #f8f9fa;
+            color: var(--secondary-color);
+        }
+
+    .footer h5 {
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+    }
+
+    .footer a {
+        color: var(--secondary-color);
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .footer a:hover {
+        color: var(--primary-color);
+    }
+
+    .footer .fab {
+        font-size: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+
+{% block body %}
+    <footer class="footer">
+        <div class="container">
+            <div class="row py-5">
+                <div class="col-md-4 mb-4">
+                    <h5>About JobFind</h5>
+                    <p>Connecting professionals with their dream careers and helping companies find the perfect talent.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#about">About Us</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                        <li><a href="/privacy">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Contact Us</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-envelope me-2"></i> contact@jobfind.com</li>
+                        <li><i class="fas fa-phone me-2"></i> (555) 123-4567</li>
+                        <li class="mt-3">
+                            <a href="#" class="me-2"><i class="fab fa-facebook"></i></a>
+                            <a href="#" class="me-2"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="me-2"><i class="fab fa-linkedin"></i></a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row border-top py-3">
+                <div class="text-center p-3 text-dark w-100 bottom-0">
+                    &copy; <span id="current-year"></span> JobFind
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
+{% endblock %}

@@ -21,7 +21,7 @@ frontend_bp = Blueprint("frontend", __name__)
 # Home
 @frontend_bp.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("public/index.html")
 
 # Jobs - feed
 @frontend_bp.route("/jobs")
@@ -489,7 +489,7 @@ def logout():
 # privacy
 @frontend_bp.route('/privacy')
 def privacy():
-    return render_template('privacy.html', active='privacy')
+    return render_template('public/privacy.html', active='privacy')
 
 
 
