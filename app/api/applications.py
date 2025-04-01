@@ -6,8 +6,8 @@ from datetime import datetime
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 # local
-from app.utils.file_handler import save_resume, allowed_file
-from app import db, app # for the configs
+from app.utils.file_handler import allowed_file
+from app import db
 from app.models import Person, Company, Job, JobApplication
 from .notifications import create_notification
 
@@ -58,7 +58,7 @@ def download_resume(file_name):
     if file_name and allowed_file(file_name):
         original_filename = secure_filename(file_name)
         current_app.logger.info(f"Downloading resume: {original_filename} for user: {current_user.name}...")
-        return send_from_directory(app.config["UPLOAD_FOLDER"], original_filename, as_attachment=True)
+        return send_from_directory(current_app.config["UPLOAD_FOLDER"], original_filename, as_attachment=True)
 
     return render_template("errors/404.html"), 404
 

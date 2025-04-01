@@ -1,0 +1,62 @@
+{% block head %}
+<style>
+    /* Navbar styles */
+    .main-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+        }
+
+        .main-navbar .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .main-navbar .nav-link {
+            color: var(--secondary-color);
+            margin: 0 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .main-navbar .nav-link:hover {
+            color: var(--primary-color);
+        }
+</style>
+{% endblock %}
+
+
+{% block body %}
+    <nav class="main-navbar navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">JobFind</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">Contact</a>
+                    </li>
+                    <li>
+                        <a href="/users/login" class="nav-link">Sign In</a>
+                    </li>
+                    <li>
+                        <a href="/users/register" class="nav-link">Get Started</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
