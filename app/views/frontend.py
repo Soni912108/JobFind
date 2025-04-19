@@ -1,20 +1,20 @@
+from datetime import datetime
+
 from flask import (Blueprint, render_template, request, 
-                   current_app,redirect, url_for, flash)
+                   current_app,redirect, url_for, flash,jsonify)
 from flask import session
 from flask_login import login_user, login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import desc
+# local
 from app.models import (
     User, Person, Company, Job, 
     JobApplication, Room, Notifications,ContactMessage
 )
-from datetime import datetime
-
 from app import db
 from app.utils.send_mail import send_contact_email
 from app.utils.validate_data import (validate_register_data, validate_login_data, is_form_empty,
                                    validate_register_company_data, validate_register_user_data)
-
-
 
 frontend_bp = Blueprint("frontend", __name__)
 
@@ -37,13 +37,13 @@ def jobs():
     else:
         base_query = Job.query
 
-    jobs_pagination = base_query.order_by(Job.created_at.desc()).paginate(
+    jobs_pagination = base_query.order_by(desc(Job.created_at)).paginate(
         page=page,
         per_page=per_page,
         error_out=False
     )
     jobs_list = jobs_pagination.items
-
+    
     for job in jobs_list:
         if isinstance(current_user, Company):
             job.is_owner = job.company_id == current_user.id
@@ -478,9 +478,9 @@ def register_post():
 @frontend_bp.route("/logout")
 @login_required
 def logout():
+    current_app.logger.info(f"User: {current_user.name} is logging out...")
     logout_user()
     session.clear()
-    current_app.logger.info(f"User: {current_user.name} logged out successfully")
     flash("You have been logged out.", "info")
     return redirect(url_for("frontend.login"))
 
@@ -492,7 +492,7 @@ def privacy():
     return render_template('public/privacy.html', active='privacy')
 
 
-
+# handle new contact forms
 @frontend_bp.route('/contact', methods=['POST'])
 def contact_post():
     try:
@@ -504,21 +504,28 @@ def contact_post():
             message=request.form.get('message'),
             created_at=datetime.now()
         )
-        
         # Save to database
         db.session.add(contact)
         db.session.commit()
+        # log
+        current_app.logger.info("New contact form saved successfully")
         
-        # Send email notification
+        # Send email notification and return appropriate response
         if send_contact_email(contact):
-            flash('Thank you for your message! We will get back to you soon.', 'success')
+            return jsonify({
+                "status": "success",
+                "message": "Thank you for your message! We will get back to you soon."
+            })
         else:
-            # Message saved to DB but email failed
-            flash('Your message was received but there was an issue with email notification.', 'warning')
-            
+            return jsonify({
+                "status": "warning",
+                "message": "Your message was received but there was an issue with email notification."
+            })
+ 
     except Exception as e:
         current_app.logger.error(f"Error processing contact form: {e}")
         db.session.rollback()
-        flash('Sorry, there was an error sending your message.', 'danger')
-    
-    return redirect(url_for('frontend.index', _anchor='contact'))
+        return jsonify({
+            "status": "error",
+            "message": "Sorry, there was an error sending your message."
+        })

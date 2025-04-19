@@ -1,10 +1,12 @@
+from datetime import datetime
+
 from flask import Blueprint, request,jsonify,current_app
+from flask_login import login_required, current_user
+from flask_socketio import join_room,emit
+
 from app import db
 from app.models import  Notifications
-from datetime import datetime
-from flask_login import login_required, current_user
 from app.extensions import socketio
-from flask_socketio import join_room,emit
 
 notifications_bp = Blueprint("notifications",__name__)
 

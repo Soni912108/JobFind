@@ -32,7 +32,6 @@ def send_contact_email(contact:ContactMessage):
                     Sent at: {contact.created_at}
                                 """.strip()
                             )
-        
         # Send email
         mail.send(msg)
         current_app.logger.info(f"Contact form email sent successfully for {contact.email}")

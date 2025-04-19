@@ -60,7 +60,15 @@
                 </div>
             </div>
             <div class="col">
-                <h2 class="mb-1">{{ user_data.name }} {{ user_data.surname }}</h2>
+                <h2 class="mb-1">{{ user_data.name }} {{ user_data.surname }} </h2>
+                <div class="d-flex align-items-center mb-2">
+                    {% if is_person and user_data.current_company_info %}
+                        <p class="text-muted mb-0 me-3">
+                            <i class="fas fa-briefcase me-2"></i>
+                            {{ user_data.current_company_info.title }} at {{ user_data.current_company_info.company }}
+                        </p>
+                    {% endif %}
+                </div>
                 <p class="text-muted mb-0">
                     <i class="fas fa-map-marker-alt me-2"></i>{{ user_data.location or 'No location set' }}
                 </p>
@@ -160,20 +168,6 @@
                     {% endif %}
                 </div>
             </div>
-
-            <!-- Current Company Info -->
-            {% if user_data.current_company_info %}
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Current Position</h5>
-                </div>
-                <div class="card-body">
-                    <h6>{{ user_data.current_company_info.title }}</h6>
-                    <p class="text-muted mb-1">{{ user_data.current_company_info.company }}</p>
-                    <p class="mb-0">{{ user_data.current_company_info.description }}</p>
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>

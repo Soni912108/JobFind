@@ -1,16 +1,17 @@
+from dotenv import load_dotenv
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+# local
 from .extensions import socketio,mail
 from .utils.logging import setup_logger
 from .config.config import config_by_name
-from dotenv import load_dotenv
-import os
 
 # Load environment variables
 load_dotenv()
 
-# Initialize extensions
+# Initialize database
 db = SQLAlchemy()
 
 def create_app(config_name='default'):
