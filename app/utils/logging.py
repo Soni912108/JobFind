@@ -1,8 +1,9 @@
-from flask import has_request_context, request
 import logging
 import sys
 import os
 from logging.handlers import RotatingFileHandler
+
+from flask import has_request_context, request
 
 def setup_logger(app):
     # Create logs directory if it doesn't exist

@@ -1,11 +1,11 @@
-from app import db
+from datetime import datetime, date
+
 from flask_login import UserMixin
 from sqlalchemy import DateTime
-from datetime import datetime, date
-from dataclasses import dataclass
 from sqlalchemy import JSON
 from sqlalchemy.dialects.mysql import LONGTEXT
-
+# local
+from app import db
 
 
 class User(UserMixin, db.Model):

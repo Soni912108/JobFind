@@ -1,10 +1,11 @@
+from datetime import datetime
+
 from flask import Blueprint, request, flash, redirect, url_for, jsonify,current_app
 from flask_login import login_required, current_user
 # local
-from app.utils.file_handler import save_resume, allowed_file
+from app.utils.file_handler import save_resume
 from app import db
 from app.models import  Company, Person, Job, JobApplication
-from datetime import datetime
 from .notifications import create_notification
 from app.utils.validate_data import is_form_empty,validate_job_data,validate_job_update_data
 
@@ -217,8 +218,8 @@ def apply_job(job_id):
             applied_at=datetime.now()
         )
         
-        unique_filename, file_url = save_resume(request.files.get('resume'))
-        current_app.logger.info(f"In JOBS: Saved file as {unique_filename}, URL: {file_url}")
+        unique_filename = save_resume(request.files.get('resume'))
+        current_app.logger.info(f"Saved resume file as {unique_filename}")
         if unique_filename:
             application.resume_filename = unique_filename
     

@@ -160,7 +160,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editSocialLinksForm">
+                <form id="editSocialLinksForm" class="needs-validation" novalidate>
                     <div id="socialLinksContainer">
                         {% if user_data.social_links %}
                             {% for platform, link in user_data.social_links.items() %}
@@ -318,10 +318,6 @@
                         <input type="text" name="title" class="form-control"
                                value="{{ user_data.current_company_info.title if user_data.current_company_info else '' }}" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea name="description" class="form-control" rows="3">{{ user_data.current_company_info.description if user_data.current_company_info else '' }}</textarea>
-                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -417,7 +413,6 @@
             // Handle Person-specific fields
             data.surname = formData.get('surname');
             data.profession = formData.get('profession');
-            // data.skills = if (formData.get('skills')) {formData.get('skills').split(',').map(s => s.trim()).filter(s => s)};
             data.current_company_info = {
                 company: formData.get('current_company'),
                 title: formData.get('current_title'),
@@ -560,10 +555,12 @@
         const form = document.getElementById(`edit${type}Form`);
         const formData = new FormData(form);
         const data = {};
+        let endpoint = '';
         
         switch(type) {
             case 'Skills':
                 data.skills = formData.get('skills').split(',').map(s => s.trim()).filter(s => s);
+                endpoint = '/profile/edit/skills/{{ user_data.id }}';
                 break;
             case 'Experience':
                 const titles = form.querySelectorAll('[name="title[]"]');
@@ -584,17 +581,18 @@
                         });
                     }
                 });
+                endpoint = '/profile/edit/experience/{{ user_data.id }}';
                 break;
             case 'CurrentCompany':
                 data.current_company_info = {
                     company: formData.get('company'),
-                    title: formData.get('title'),
-                    description: formData.get('description')
+                    title: formData.get('title')
                 };
+                endpoint = '/profile/edit/current-company/{{ user_data.id }}';
                 break;
         }
         
-        sendRequest('/profile/edit/professional/{{ user_data.id }}', data);
+        sendRequest(endpoint, data);
     }
 
     // Helper function for sending requests

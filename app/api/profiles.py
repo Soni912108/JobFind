@@ -1,9 +1,11 @@
-from flask import Blueprint, request, flash, redirect, url_for, jsonify,render_template,current_app
+from datetime import datetime
+
+from flask import Blueprint, request, redirect, url_for, jsonify,render_template,current_app
 from flask_login import logout_user
+from flask_login import login_required, current_user
+
 from app import db
 from app.models import Person, Company, User, Room, Notifications
-from datetime import datetime
-from flask_login import login_required, current_user
 
 profiles_bp = Blueprint("profiles", __name__)
 
@@ -58,12 +60,12 @@ def visit_profile(user_id):
     )
 
 
-# showing all experiences of a user(for user and visitors)
+# showing all experiences of a person(for person them selfs and other visitors)
 @profiles_bp.route("/experiences/<int:user_id>", methods=["GET"])
 @login_required
 def all_experiences(user_id):
 
-    user = User.query.get_or_404(user_id)
+    user = Person.query.get_or_404(user_id)
     
     user_data = {
         'id': user.id,
@@ -152,12 +154,12 @@ def edit_social_links(user_id):
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-# NOTE: need a function to add experiences
 
-# 3. Person Professional Info
-@profiles_bp.route("/edit/professional/<int:user_id>", methods=["POST"])
+
+# 3. Person Professional Info - Split into separate endpoints
+@profiles_bp.route("/edit/skills/<int:user_id>", methods=["POST"])
 @login_required
-def edit_professional_info(user_id):
+def edit_skills(user_id):
     if user_id != current_user.id or not isinstance(current_user, Person):
         return jsonify({
             'status': 'error',
@@ -169,52 +171,110 @@ def edit_professional_info(user_id):
         person = Person.query.get_or_404(user_id)
         
         # Handle skills update
-        if 'skills' in data:
-            if isinstance(data['skills'], list):
-                person.skills = data['skills']
-        
-        # Handle experience update
-        if 'experience' in data:
-            if isinstance(data['experience'], list):
-                # list comprehension 
-                all_experience = [
-                    {
-                        'title': exp.get('title', ''),
-                        'company': exp.get('company', ''),
-                        'description': exp.get('description', ''),
-                        'start_date': exp.get('start_date', ''),
-                        'end_date': exp.get('end_date', '')
-                    }
-                    for exp in data['experience']
-                ]
-                person.experience = all_experience
-        
-        # Handle current company info update
-        if 'current_company_info' in data:
-            if isinstance(data['current_company_info'], dict):
-                person.current_company_info = {
-                    'company': data['current_company_info'].get('company', ''),
-                    'title': data['current_company_info'].get('title', ''),
-                    'description': data['current_company_info'].get('description', '')
-                }
-        
-        person.updated_at = datetime.now()
-        db.session.commit()
-        
-        # log debug
-        current_app.logger.info(f"Updated professional info for profile {person.name}")
-
-        return jsonify({
-            'status': 'success',
-            'message': 'Professional information updated successfully'
-        })
-        
+        if 'skills' in data and isinstance(data['skills'], list):
+            person.skills = data['skills']
+            person.updated_at = datetime.now()
+            db.session.commit()
+            
+            current_app.logger.info(f"Updated skills for profile {person.name}")
+            return jsonify({
+                'status': 'success',
+                'message': 'Skills updated successfully'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid skills data format'
+            }), 400
+            
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error updating professional info. Error: {e}")
+        current_app.logger.error(f"Error updating skills. Error: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@profiles_bp.route("/edit/experience/<int:user_id>", methods=["POST"])
+@login_required
+def edit_experience(user_id):
+    if user_id != current_user.id or not isinstance(current_user, Person):
+        return jsonify({
+            'status': 'error',
+            'message': 'Unauthorized access'
+        }), 403
+    
+    try:
+        data = request.json
+        person = Person.query.get_or_404(user_id)
+        
+        # Handle experience update
+        if 'experience' in data and isinstance(data['experience'], list):
+            # list comprehension 
+            all_experience = [
+                {
+                    'title': exp.get('title', ''),
+                    'company': exp.get('company', ''),
+                    'description': exp.get('description', ''),
+                    'start_date': exp.get('start_date', ''),
+                    'end_date': exp.get('end_date', '')
+                }
+                for exp in data['experience']
+            ]
+            person.experience = all_experience
+            person.updated_at = datetime.now()
+            db.session.commit()
+            
+            current_app.logger.info(f"Updated experience for profile {person.name}")
+            return jsonify({
+                'status': 'success',
+                'message': 'Experience updated successfully'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid experience data format'
+            }), 400
+            
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating experience. Error: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@profiles_bp.route("/edit/current-company/<int:user_id>", methods=["POST"])
+@login_required
+def edit_current_company(user_id):
+    if user_id != current_user.id or not isinstance(current_user, Person):
+        return jsonify({
+            'status': 'error',
+            'message': 'Unauthorized access'
+        }), 403
+    
+    try:
+        data = request.json
+        person = Person.query.get_or_404(user_id)
+        
+        # Handle current company info update
+        if 'current_company_info' in data and isinstance(data['current_company_info'], dict):
+            person.current_company_info = {
+                'company': data['current_company_info'].get('company', ''),
+                'title': data['current_company_info'].get('title', '')
+            }
+            person.updated_at = datetime.now()
+            db.session.commit()
+            
+            current_app.logger.info(f"Updated current company info for profile {person.name}")
+            return jsonify({
+                'status': 'success',
+                'message': 'Current company information updated successfully'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid current company data format'
+            }), 400
+            
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating current company info. Error: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # DANGER ZONE
 # delete profile
