@@ -2,6 +2,7 @@ import sys
 import os
 import random
 import string
+from datetime import datetime, timedelta
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -10,11 +11,7 @@ from dotenv import load_dotenv
 
 from app import create_app,db # db here is -> db = SQLAlchemy()
 from app.models import Person, Company, Job, JobApplication, Room, Message, Notifications
-from datetime import datetime, timedelta
 
-
-# Load environment variables
-load_dotenv()
 
 # Initialize Faker for generating random data
 fake = Faker()
@@ -153,6 +150,9 @@ def create_test_notifications(users, num_notifications=20):
 # main function
 def seed_database():
     """Main function to seed the database with test data"""
+    # Load environment variables
+    load_dotenv()
+    # create app in testing config
     app = create_app('testing')
 
     with app.app_context():

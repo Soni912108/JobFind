@@ -15,7 +15,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
     
-    # Mail config
+    # Mail config(**change when testing the database seeding**)
     MAIL_SERVER = os.getenv('MAIL_SERVER')
     MAIL_PORT = int(os.getenv('MAIL_PORT'))
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS')
@@ -33,7 +33,7 @@ class ProductionConfig(Config):
     """Production config"""
     DEBUG = False
     DEVELOPMENT = False
-    UPLOAD_FOLDER = '/var/www/jobfind/static/resume_upload'  # Example production path 
+    UPLOAD_FOLDER = os.getenv('PROD_UPLOAD_FOLDER')
 
 class TestingConfig(Config):
     """Testing config"""

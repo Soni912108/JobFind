@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 # local
 from app.utils.file_handler import save_resume
 from app import db
+from app.extensions import limiter
 from app.models import  Company, Person, Job, JobApplication
 from .notifications import create_notification
 from app.utils.validate_data import is_form_empty,validate_job_data,validate_job_update_data
@@ -13,6 +14,7 @@ jobs_bp = Blueprint("jobs", __name__)
 
 # Create a new job
 @jobs_bp.route("/job/create", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def create_job():
     try:
@@ -76,6 +78,7 @@ def job_detail(job_id):
 
 # Update job
 @jobs_bp.route("/job/update/", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def update_job():
     # Check if current user is a company
@@ -123,6 +126,7 @@ def update_job():
 
 # deactivate job
 @jobs_bp.route("/job/deactivate/<int:job_id>", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def deactivate_job(job_id):
     # Check if current user is a company
@@ -158,6 +162,7 @@ def deactivate_job(job_id):
 
 # delete job
 @jobs_bp.route("/job/delete/", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def delete_job():
     job_id = request.form.get("jobId")
@@ -186,6 +191,7 @@ def delete_job():
 
 # Apply for a job
 @jobs_bp.route("/job/apply/<int:job_id>", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def apply_job(job_id):
     # Check if job exists
@@ -219,7 +225,6 @@ def apply_job(job_id):
         )
         
         unique_filename = save_resume(request.files.get('resume'))
-        current_app.logger.info(f"Saved resume file as {unique_filename}")
         if unique_filename:
             application.resume_filename = unique_filename
     
