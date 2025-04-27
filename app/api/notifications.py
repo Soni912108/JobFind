@@ -6,12 +6,13 @@ from flask_socketio import join_room,emit
 
 from app import db
 from app.models import  Notifications
-from app.extensions import socketio
+from app.extensions import socketio, limiter
 
 notifications_bp = Blueprint("notifications",__name__)
 
 # mark a single notification as read
 @notifications_bp.route("/notification/mark_read/<int:notification_id>", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def mark_notification_read(notification_id):
     notification = Notifications.query.get(notification_id)
@@ -26,6 +27,7 @@ def mark_notification_read(notification_id):
 
 # mark all user's notifications as read
 @notifications_bp.route("/notification/mark_all_read", methods=["POST"])
+@limiter.limit("1 per minute")
 @login_required
 def mark_all_read():
     all_current_user_notifications = Notifications.query.filter_by(receiver_id=current_user.id).all()
@@ -40,6 +42,7 @@ def mark_all_read():
 
 # delete a notification
 @notifications_bp.route("/notification/delete/<int:notification_id>", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def delete_notification(notification_id):
     notification = Notifications.query.get(notification_id)

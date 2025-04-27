@@ -4,7 +4,7 @@ from flask_socketio import emit, join_room, rooms
 from flask_login import login_required, current_user
 # local
 from app import db
-from app.extensions import socketio
+from app.extensions import socketio, limiter
 from app.models import User, Room, Message
 from .notifications import create_notification
 from app.utils.validate_data import (is_form_empty, validate_new_room_data, 
@@ -13,6 +13,7 @@ from app.utils.validate_data import (is_form_empty, validate_new_room_data,
 direct_messages_bp = Blueprint("direct_messages", __name__)
 
 @direct_messages_bp.route("room/new", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def new_room():
     try:
@@ -67,6 +68,7 @@ def new_room():
         return jsonify({"success": False, "message": str(e)})
 
 @direct_messages_bp.route("room/join/<int:room_id>", methods=["POST"])
+@limiter.limit("1 per minute")
 @login_required
 def join_room_route(room_id):
     try:
@@ -113,6 +115,7 @@ def join_room_route(room_id):
 
 # delete rooms
 @direct_messages_bp.route("room/delete/", methods=["POST"])
+@limiter.limit("1 per minute")
 @login_required
 def delete_room():
     # get the room id from the request body
@@ -144,6 +147,7 @@ def delete_room():
 
 # rename rooms
 @direct_messages_bp.route("room/rename/", methods=["POST"])
+@limiter.limit("1 per minute")
 @login_required
 def rename_room():
     try:
@@ -189,6 +193,7 @@ def rename_room():
 
 
 @direct_messages_bp.route("search_users/<string:input>", methods=["GET"])
+@limiter.limit("5 per minute")
 @login_required
 def search_users_for_new_messages(input):
     _input = input.strip()
