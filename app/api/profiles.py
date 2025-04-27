@@ -5,7 +5,7 @@ from flask_login import logout_user
 from flask_login import login_required, current_user
 
 from app import db
-from app.extensions import socketio, limiter
+from app.extensions import  limiter
 from app.models import Person, Company, User, Room, Notifications
 
 profiles_bp = Blueprint("profiles", __name__)
