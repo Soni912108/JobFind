@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 # local
 from app.utils.file_handler import allowed_file
 from app import db
+from app.extensions import limiter
 from app.models import Person, Company, Job, JobApplication
 from .notifications import create_notification
 
@@ -18,6 +19,7 @@ applications_bp = Blueprint("applications", __name__)
 # here will create the api to crud applications
 
 @applications_bp.route("/application/delete/", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def delete_application():
     application_id = request.form.get('applicationId')
@@ -54,6 +56,7 @@ def delete_application():
 
 
 @applications_bp.route("/application/download_resume/<string:file_name>", methods=["GET"])
+@limiter.limit("5 per minute")
 @login_required
 def download_resume(file_name):
     if file_name and allowed_file(file_name):
@@ -65,6 +68,7 @@ def download_resume(file_name):
 
 
 @applications_bp.route("/application/list/<int:job_id>", methods=["GET"])
+@limiter.limit("5 per minute")
 @login_required
 def list_applications(job_id):
     # Check if user is a Company and owns the job
@@ -106,6 +110,7 @@ def list_applications(job_id):
 
 
 @applications_bp.route("/application/detail/<int:application_id>", methods=["GET"])
+@limiter.limit("5 per minute")
 @login_required
 def application_detail(application_id):
     try:
@@ -167,6 +172,7 @@ def application_detail(application_id):
 
 # Update a job application status(ONLY FOR COMPANIES)
 @applications_bp.route("/application/update_status", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def update_status():
     # Verify the current user is a Company
