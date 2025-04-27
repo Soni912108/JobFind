@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import Blueprint, request, redirect, url_for, jsonify,render_template,current_app
 from flask_login import logout_user
 from flask_login import login_required, current_user
-
+# local
 from app import db
 from app.extensions import  limiter
 from app.models import Person, Company, User, Room, Notifications
