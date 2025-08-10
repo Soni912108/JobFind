@@ -12,7 +12,7 @@ from app.models import (
     JobApplication, Room, Notifications,ContactMessage
 )
 from app import db
-from app.utils.send_mail import send_contact_email
+from app.utils.send_mail import send_contact_email, generate_token,confirm_token, send_email
 from app.utils.validate_data import (validate_register_data, validate_login_data, is_form_empty,
                                    validate_register_company_data, validate_register_user_data)
 
@@ -459,20 +459,59 @@ def register_post():
                 location=req_data.get("location"),
                 password=generate_password_hash(req_data.get("password"))
             )
-
+        # send email verification and redirect to a preview page, 
+        # where will wait for user to open email, and click the link to get them redirected to home page
+        # *** as of now the logic to send email to users to confirm their emails is not working ****
+        
         db.session.add(user)
         db.session.commit()
         # log
-        current_app.logger.info(f"Registration successful for user: {user.name}")
-        # return
-        flash("Registration successful", "success")
-        return redirect(url_for('frontend.login'))
+        # current_app.logger.info(f"Registration successful for user: {user.name}")
+        # # return
+        # flash("Registration successful", "success")
+        # return redirect(url_for('frontend.login'))
+        token = generate_token(user.email)
+        confirm_url = url_for("accounts.confirm_email", token=token, _external=True)
+        html = render_template("accounts/confirm_email.html", confirm_url=confirm_url)
+        subject = "Please confirm your email"
+        send_email(user.email, subject, html)
 
+        login_user(user)
+
+        flash("A confirmation email has been sent via email.", "success")
+        return redirect(url_for("accounts.inactive"))
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Registration error: {e}")
         flash('Error during registration', "danger")
         return redirect(url_for('frontend.register'))
+
+
+
+# TO DO:
+@frontend_bp.route("/inactive")
+@login_required
+def inactive():
+    if current_user.is_confirmed:
+        return redirect(url_for("core.home"))
+    return render_template("accounts/inactive.html")
+
+
+# TO DO:
+@frontend_bp.route("/resend")
+@login_required
+def resend_confirmation():
+    if current_user.is_confirmed:
+        flash("Your account has already been confirmed.", "success")
+        return redirect(url_for("core.home"))
+    token = generate_token(current_user.email)
+    confirm_url = url_for("accounts.confirm_email", token=token, _external=True)
+    html = render_template("accounts/confirm_email.html", confirm_url=confirm_url)
+    subject = "Please confirm your email"
+    send_email(current_user.email, subject, html)
+    flash("A new confirmation email has been sent.", "success")
+    return redirect(url_for("accounts.inactive"))
+
 
 # Logout 
 @frontend_bp.route("/logout")
@@ -483,7 +522,6 @@ def logout():
     session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for("frontend.login"))
-
 
 # -------------------endpoints to handle public pages-------------
 # privacy

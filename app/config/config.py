@@ -22,6 +22,7 @@ class Config:
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
+    SECURITY_PASSWORD_SALT = os.getenv("SECURITY_PASSWORD_SALT")
 
 class DevelopmentConfig(Config):
     """Development config"""
