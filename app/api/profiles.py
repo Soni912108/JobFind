@@ -3,8 +3,9 @@ from datetime import datetime
 from flask import Blueprint, request, redirect, url_for, jsonify,render_template,current_app
 from flask_login import logout_user
 from flask_login import login_required, current_user
-
+# local
 from app import db
+from app.extensions import  limiter
 from app.models import Person, Company, User, Room, Notifications
 
 profiles_bp = Blueprint("profiles", __name__)
@@ -13,6 +14,7 @@ profiles_bp = Blueprint("profiles", __name__)
 
 # endpoint to show profile to visitors
 @profiles_bp.route("/view/<int:user_id>", methods=["GET"])
+@limiter.limit("10 per minute")
 @login_required
 def visit_profile(user_id):
     # Find the user by ID
@@ -62,6 +64,7 @@ def visit_profile(user_id):
 
 # showing all experiences of a person(for person them selfs and other visitors)
 @profiles_bp.route("/experiences/<int:user_id>", methods=["GET"])
+@limiter.limit("5 per minute")
 @login_required
 def all_experiences(user_id):
 
@@ -85,6 +88,7 @@ def all_experiences(user_id):
 
 # 1. Basic Profile Edit (shared data)
 @profiles_bp.route("/edit/basic/<int:user_id>", methods=["POST"])
+@limiter.limit("1 per minute")
 @login_required
 def edit_basic_profile(user_id):
     if user_id != current_user.id:
@@ -128,6 +132,7 @@ def edit_basic_profile(user_id):
 
 # 2. Company Social Links
 @profiles_bp.route("/edit/social-links/<int:user_id>", methods=["POST"])
+@limiter.limit("1 per minute")
 @login_required
 def edit_social_links(user_id):
     if user_id != current_user.id or not isinstance(current_user, Company):
@@ -158,6 +163,7 @@ def edit_social_links(user_id):
 
 # 3. Person Professional Info - Split into separate endpoints
 @profiles_bp.route("/edit/skills/<int:user_id>", methods=["POST"])
+@limiter.limit("1 per minute")
 @login_required
 def edit_skills(user_id):
     if user_id != current_user.id or not isinstance(current_user, Person):
@@ -193,6 +199,7 @@ def edit_skills(user_id):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @profiles_bp.route("/edit/experience/<int:user_id>", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def edit_experience(user_id):
     if user_id != current_user.id or not isinstance(current_user, Person):
@@ -239,6 +246,7 @@ def edit_experience(user_id):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @profiles_bp.route("/edit/current-company/<int:user_id>", methods=["POST"])
+@limiter.limit("5 per minute")
 @login_required
 def edit_current_company(user_id):
     if user_id != current_user.id or not isinstance(current_user, Person):
@@ -279,6 +287,7 @@ def edit_current_company(user_id):
 # DANGER ZONE
 # delete profile
 @profiles_bp.route("/delete/<int:user_id>", methods=["POST"])
+@limiter.limit("1 per minute")
 @login_required
 def delete_account(user_id):
     if user_id != current_user.id:

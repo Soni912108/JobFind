@@ -1,5 +1,6 @@
 from flask import current_app
 from flask_mail import Message
+from itsdangerous import URLSafeTimedSerializer
 # local
 from app.models import ContactMessage
 from ..extensions import mail
@@ -39,4 +40,30 @@ def send_contact_email(contact:ContactMessage):
         
     except Exception as e:
         current_app.logger.error(f"Failed to send contact form email: {e}")
+        return False
+    
+# TO DO:
+def send_email(to, subject, template):
+    msg = Message(
+        subject,
+        recipients=[to],
+        html=template,
+        sender=current_app.config["MAIL_USERNAME"],
+    )
+    mail.send(msg)
+
+# TO DO:
+def generate_token(email):
+    serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+    return serializer.dumps(email, salt=current_app.config["SECURITY_PASSWORD_SALT"])
+
+# TO DO:
+def confirm_token(token, expiration=3600):
+    serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+    try:
+        email = serializer.loads(
+            token, salt=current_app.config["SECURITY_PASSWORD_SALT"], max_age=expiration
+        )
+        return email
+    except Exception:
         return False

@@ -18,7 +18,9 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(100), nullable=False)
     user_type = db.Column(db.String(20), nullable=False)  # 'person' or 'company'
     location = db.Column(db.String(100))
-    
+    # valid email checks
+    is_confirmed = db.Column(db.Boolean, nullable=False, default=False)
+    confirmed_on = db.Column(DateTime, nullable=True)
     # Timestamps
     created_at = db.Column(DateTime, default=datetime.now)
     updated_at = db.Column(DateTime, default=datetime.now, onupdate=datetime.now)
