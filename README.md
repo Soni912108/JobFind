@@ -9,7 +9,7 @@ JobFind is a web application designed to facilitate job searching and networking
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact Information](#contact-information)
-- [Acknowledgments](#acknowledgments)
+
 
 ## Installation
 
@@ -70,6 +70,3 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 For any inquiries, please contact [Erdison Malko](mailto:erdisonmalko@gmail.com).
 
-## Acknowledgments
-
-- Thanks to all contributors and open-source projects that made this project possible.
