@@ -13,7 +13,6 @@ RUN pip install --no-cache-dir -r app/requirements.txt
 # Install watchdog for auto-reloading
 RUN pip install watchdog
 
-# Make port 5000 available to the world outside this container
 EXPOSE 5001
 
 # Define environment variables
